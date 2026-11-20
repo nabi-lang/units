@@ -1,0 +1,67 @@
+// CODATA values, and the identities that tie them together.
+
+use pkg::constants::{a_0, alpha, atm, c, codata, e, epsilon_0, eV, F, G, g_n, h, hbar, k_B, lookup, m_e, m_p, m_u, mu_0, mu_B, N_A, R, R_inf, r_e, sigma, Z_0, ħ, α, ε₀, μ₀};
+use pkg::tests::suite::{expect, rel};
+
+#[test]
+fn defining_constants() {
+    expect(c.value == 299792458.0, "c");
+    expect(h.value == 6.62607015e-34, "h");
+    expect(e.value == 1.602176634e-19, "e");
+    expect(k_B.value == 1.380649e-23, "k");
+    expect(N_A.value == 6.02214076e23, "N_A");
+    expect(g_n.value == 9.80665 && atm.value == 101325.0, "conventional");
+    expect(eV.value == e.value, "electronvolt");
+}
+
+#[test]
+fn exact_derived() {
+    rel(hbar.value, 1.054571817646156e-34, 1e-15, "hbar");
+    rel(R.value, 8.314462618153240, 1e-15, "R");
+    rel(F.value, 96485.33212331001, 1e-15, "F");
+    rel(sigma.value, 5.670374419184429e-8, 1e-15, "sigma");
+    expect(R == N_A * k_B, "R = N_A k");
+    expect(F == N_A * e, "F = N_A e");
+    rel(sigma.value, 2.0 * f64::PI.powi(5) * k_B.value.powi(4) / (15.0 * h.value.powi(3) * c.value * c.value), 1e-14, "sigma formula");
+    expect(ħ == hbar && α == alpha && ε₀ == epsilon_0 && μ₀ == mu_0, "symbol aliases");
+}
+
+// Measured values agree with each other within their uncertainties.
+#[test]
+fn identities() {
+    // 1 / (mu_0 epsilon_0) = c^2.
+    rel((mu_0 * epsilon_0 * c.squared()).value, 1.0, 3e-10, "mu_0 eps_0 c^2");
+    // alpha = e^2 / (4 pi eps_0 hbar c) = e^2 / (2 eps_0 h c).
+    rel((e.squared() / (epsilon_0 * h * c) * 0.5).value, alpha.value, 3e-10, "alpha");
+    // mu_0 = 2 alpha h / (e^2 c).
+    rel((h * alpha.value * 2.0 / (e.squared() * c)).value, mu_0.value, 3e-10, "mu_0");
+    // Z_0 = mu_0 c.
+    rel((mu_0 * c).value, Z_0.value, 3e-10, "Z_0");
+    // a_0 = hbar / (m_e c alpha).
+    rel((hbar / (m_e * c) / alpha.value).value, a_0.value, 3e-10, "a_0");
+    // R_inf = alpha^2 m_e c / (2 h).
+    rel((m_e * c / h * (alpha.value * alpha.value * 0.5)).value, R_inf.value, 3e-10, "R_inf");
+    // r_e = alpha^2 a_0.
+    rel(a_0.value * alpha.value * alpha.value, r_e.value, 3e-10, "r_e");
+    // mu_B = e hbar / (2 m_e).
+    rel((e * hbar / m_e * 0.5).value, mu_B.value, 3e-10, "mu_B");
+    // m_p / m_e, CODATA 2022: 1836.152673426(32).
+    rel((m_p / m_e).value, 1836.152673426, 1e-10, "m_p / m_e");
+    // m_u N_A is the molar mass constant, 1 g/mol within 1.1e-9 since
+    // the 2019 SI: CODATA 2022 gives 1.00000000105(31) g/mol.
+    rel(m_u.value * N_A.value, 1.00000000105e-3, 4e-10, "m_u N_A");
+    expect(G.dim().exponents() == [3, -1, -2, 0, 0, 0, 0], "G dimension");
+}
+
+#[test]
+fn table() {
+    for k in codata() {
+        expect(k.exact == (k.uncertainty == 0.0), f"{k.symbol}: exact iff no uncertainty");
+        expect(k.value > 0.0, k.symbol);
+        expect(lookup(k.symbol) == k && lookup(k.name) == k, f"lookup {k.symbol}");
+    }
+    let g = lookup("G") ?? panic("G");
+    expect(g.uncertainty == 1.5e-15 && g.unit == "m³/(kg·s²)", "G record");
+    expect((lookup("m_e") ?? panic("m_e")) == (lookup("electron mass") ?? panic("m_e")), "by name");
+    expect(lookup("nothing") == none, "unknown");
+}

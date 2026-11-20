@@ -1,0 +1,12 @@
+// expect: mismatched types
+// A fused in-place write of a length into a velocity.
+use core::array::Array;
+use units::symbols::{m, s};
+
+fn main() {
+    let d = m.array(Array::from_list([1.0, 2.0], [2]));
+    let t = s.array(Array::from_list([1.0, 2.0], [2]));
+    let v = d ./ t;
+    v .= d .+ d;
+    println(v.len());
+}

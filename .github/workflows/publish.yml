@@ -1,0 +1,69 @@
+# Publish the package to packages.nabi-lang.org when a v* tag is pushed. Trusted
+# publishing: the job's OIDC token is traded for a token that lasts 30
+# minutes, so the repository keeps no secret. Needs the package's trusted
+# publisher (this repository, `publish.yml`) on packages.nabi-lang.org.
+name: Publish / Package to the registry
+
+on:
+  push:
+    tags: ['v*']
+  # a tag pushed before this file was in the repository
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Tag to publish, e.g. v0.3.1
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    name: Publish to packages.nabi-lang.org
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      # the OIDC token
+      id-token: write
+    # required reviewers and a v* tag rule; the trusted publisher names it too
+    environment: release
+    steps:
+      - name: Check out the tag
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+          persist-credentials: false
+
+      - name: Clone path dependencies
+        uses: nabi-lang/.github/actions/clone-path-deps@v1.0.0
+
+      - name: Install Nabi from the nabi.nabion pin
+        uses: nabi-lang/.github/actions/install-nabi@v1.0.0
+        with:
+          pin: nabi.nabion
+
+      - name: Check the tag, tests and publish dry run
+        env:
+          TAG: ${{ inputs.tag || github.ref_name }}
+        run: |
+          want=$(sed -n 's/^ *version: "\(.*\)",*$/\1/p' nabi.nabion | head -1)
+          [ "v$want" = "$TAG" ] || { echo "tag $TAG, but nabi.nabion has version $want" >&2; exit 1; }
+          nabi test
+          nabi publish --dry-run
+
+      - name: Log in to packages.nabi-lang.org with the OIDC token
+        run: |
+          jwt=$(curl -fsS -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=packages.nabi-lang.org" | sed -n 's/.*"value":"\([^"]*\)".*/\1/p')
+          out=$(curl -sS --fail-with-body -H 'Content-Type: application/nabion' \
+            --data-binary "TrustedPublishing { jwt: \"$jwt\" }" \
+            https://packages.nabi-lang.org/api/v1/trusted-publishing/token) || { echo "$out" >&2; exit 1; }
+          tok=$(printf '%s' "$out" | sed -n 's/.*token: "\(pkt_[0-9a-f]*\)".*/\1/p')
+          [ -n "$tok" ]
+          echo "::add-mask::$tok"
+          # stdin, not argv
+          printf '%s\n' "$tok" | nabi login
+
+      - name: Publish with nabi publish
+        run: nabi publish

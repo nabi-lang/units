@@ -1,0 +1,314 @@
+//! The static quantity: a value in coherent SI units whose dimension is
+//! part of its type, so `m + s` and passing a speed for a force are
+//! compile errors and the checks cost nothing at run time.
+
+mod arith;
+mod array;
+
+use pkg::{Dim, DynUnit, Measure, Unit, UnitError};
+
+/// A value of a physical quantity, held in coherent SI units (metres,
+/// kilograms, seconds, ...). The seven const parameters are the
+/// exponents of the SI base dimensions, in the order length `L`, mass
+/// `M`, time `T`, electric current `I`, temperature `K`, amount `N` and
+/// luminous intensity `J`: a velocity is `Quantity<f64, 1, 0, -1, 0,
+/// 0, 0, 0>`, named `Velocity` in `units::kinds`.
+///
+/// `*` and `/` add and subtract exponents; `+`, `-` and the comparisons
+/// take two quantities of one dimension only, so a mismatch does not
+/// compile. `V` is the value type: `f64` (literals and units give it),
+/// `f32`, `Complex<f64>` (an impedance), or a core `Array<f64, R>` for a
+/// whole field of values with the broadcast operators `.+ .- .* ./`.
+///
+/// ```nabi
+/// use units::kinds::{Length, Time, Velocity};
+/// use units::symbols::{km, h};
+///
+/// fn speed(d: Length, t: Time) -> Velocity { d / t }
+///
+/// let v = speed(42.195km, 2h);
+/// assert(v.value_in(km / h) == 21.0975);
+/// println(v); // 5.860416666666667 m/s
+/// ```
+pub struct Quantity<V, const L: i32, const M: i32, const T: i32, const I: i32, const K: i32, const N: i32, const J: i32> {
+    /// The value in coherent SI units (`3km` holds `3000.0`).
+    pub value: V;
+}
+
+impl<V, const L: i32, const M: i32, const T: i32, const I: i32, const K: i32, const N: i32, const J: i32> Quantity<V, L, M, T, I, K, N, J> {
+    /// The quantity whose SI value is `value`.
+    ///
+    /// ```nabi
+    /// use units::Quantity;
+    /// use units::kinds::Length;
+    ///
+    /// let d: Length = Quantity::si(3.0);
+    /// assert(d == 3m);
+    /// ```
+    pub const fn si(value: V) -> Quantity<V, L, M, T, I, K, N, J> { Quantity { value: value } }
+
+    /// The dimension, as a value.
+    ///
+    /// ```nabi
+    /// assert((3m / 2s).dim().name() == "velocity");
+    /// ```
+    pub const fn dim(self) -> Dim { Dim::of([L as i8, M as i8, T as i8, I as i8, K as i8, N as i8, J as i8]) }
+
+    /// The coherent SI unit this quantity prints with: `"m/s"`, `"N"`.
+    ///
+    /// ```nabi
+    /// assert((2kg * 3m / 1s / 1s).unit_symbol() == "N");
+    /// ```
+    pub fn unit_symbol(self) -> str { self.dim().symbol() }
+}
+
+impl<const L: i32, const M: i32, const T: i32, const I: i32, const K: i32, const N: i32, const J: i32> Quantity<f64, L, M, T, I, K, N, J> {
+    /// The value expressed in `unit`, a plain number.
+    ///
+    /// ```nabi
+    /// use units::symbols::{mi, ft};
+    ///
+    /// assert(1mi.value_in(ft) == 5280.0);
+    /// ```
+    pub fn value_in(self, unit: Unit<L, M, T, I, K, N, J>) -> f64 { self.value / unit.scale() }
+
+    /// The quantity expressed in `unit`, for printing or further dynamic
+    /// work: `3km.to(mi)` prints `1.8641135767120018 mi`. The units must
+    /// share the dimension, which the types check.
+    ///
+    /// ```nabi
+    /// use units::symbols::{mi, km};
+    ///
+    /// let m = 5km.to(mi);
+    /// assert((m.value - 3.1068559611866697).abs() < 1e-15);
+    /// assert(m.unit.symbol == "mi");
+    /// ```
+    pub fn to(self, unit: Unit<L, M, T, I, K, N, J>) -> Measure { Measure { value: self.value / unit.scale(), unit: unit.dynamic() } }
+
+    /// The quantity expressed in the dynamic `unit`; throws a
+    /// `UnitError::Mismatch` naming both dimensions when they differ.
+    ///
+    /// ```nabi
+    /// use units::DynUnit;
+    ///
+    /// let u = try! DynUnit::parse("km/h");
+    /// assert((try! (10m / 1s).convert(u)).value == 36.0);
+    /// ```
+    pub fn convert(self, unit: DynUnit) throws (UnitError) -> Measure {
+        if unit.dim != self.dim() { throw UnitError::mismatch("convert", self.dim(), unit.dim); }
+        Measure { value: unit.from_si(self.value), unit: unit }
+    }
+
+    /// The same quantity as a dynamic `Measure` in SI units.
+    ///
+    /// ```nabi
+    /// assert((2m / 1s).measure().unit.symbol == "m/s");
+    /// ```
+    pub fn measure(self) -> Measure { Measure { value: self.value, unit: DynUnit::coherent(self.dim()) } }
+
+    /// The static quantity of a dynamic one, its dimension given by the
+    /// expected type; throws a `UnitError::Mismatch` when the measure
+    /// has another dimension.
+    ///
+    /// ```nabi
+    /// use units::{Measure, Quantity};
+    /// use units::kinds::Velocity;
+    ///
+    /// let v: Velocity = try! Quantity::from_measure(try! Measure::parse("36 km/h"));
+    /// assert(v == 10m / 1s);
+    /// ```
+    pub fn from_measure(m: Measure) throws (UnitError) -> Quantity<f64, L, M, T, I, K, N, J> {
+        let want = Dim::of([L as i8, M as i8, T as i8, I as i8, K as i8, N as i8, J as i8]);
+        if m.unit.dim != want { throw UnitError::mismatch("convert", m.unit.dim, want); }
+        Quantity { value: m.si() }
+    }
+
+    /// `self * self`.
+    ///
+    /// ```nabi
+    /// assert(3m.squared() == 9m²);
+    /// ```
+    pub const fn squared(self) -> Quantity<f64, { 2 * L }, { 2 * M }, { 2 * T }, { 2 * I }, { 2 * K }, { 2 * N }, { 2 * J }> { Quantity { value: self.value * self.value } }
+
+    /// `self * self * self`.
+    ///
+    /// ```nabi
+    /// assert(2m.cubed() == 8m³);
+    /// ```
+    pub const fn cubed(self) -> Quantity<f64, { 3 * L }, { 3 * M }, { 3 * T }, { 3 * I }, { 3 * K }, { 3 * N }, { 3 * J }> { Quantity { value: self.value * self.value * self.value } }
+
+    /// `1 / self`.
+    ///
+    /// ```nabi
+    /// assert(2s.inv() == 0.5Hz && 1.0 / 2s == 0.5Hz);
+    /// ```
+    pub const fn inv(self) -> Quantity<f64, { -L }, { -M }, { -T }, { -I }, { -K }, { -N }, { -J }> { Quantity { value: 1.0 / self.value } }
+
+    /// `self` to the integer power `P`, given as a const argument so the
+    /// dimension stays static: `x.powi::<3>()`. (`x ** 3` gives a
+    /// dynamic `Measure`, since an operator's operand is a value.)
+    ///
+    /// ```nabi
+    /// assert(2m.powi::<3>() == 8m³);
+    /// assert(2m.powi::<-1>().value == 0.5);
+    /// ```
+    pub fn powi<const P: i32>(self) -> Quantity<f64, { L * P }, { M * P }, { T * P }, { I * P }, { K * P }, { N * P }, { J * P }> { Quantity { value: self.value.powi(P) } }
+
+    /// The absolute value.
+    ///
+    /// ```nabi
+    /// assert((-2m).abs() == 2m);
+    /// ```
+    pub const fn abs(self) -> Quantity<f64, L, M, T, I, K, N, J> { Quantity { value: self.value.abs() } }
+
+    /// The smaller of two quantities of one dimension.
+    ///
+    /// ```nabi
+    /// assert(2m.min(3m) == 2m);
+    /// ```
+    pub const fn min(self, other: Quantity<f64, L, M, T, I, K, N, J>) -> Quantity<f64, L, M, T, I, K, N, J> { Quantity { value: self.value.min(other.value) } }
+
+    /// The larger of two quantities of one dimension.
+    ///
+    /// ```nabi
+    /// assert(2m.max(3m) == 3m);
+    /// ```
+    pub const fn max(self, other: Quantity<f64, L, M, T, I, K, N, J>) -> Quantity<f64, L, M, T, I, K, N, J> { Quantity { value: self.value.max(other.value) } }
+
+    /// `sqrt(self^2 + other^2)` without overflow.
+    ///
+    /// ```nabi
+    /// assert(3m.hypot(4m) == 5m);
+    /// ```
+    pub fn hypot(self, other: Quantity<f64, L, M, T, I, K, N, J>) -> Quantity<f64, L, M, T, I, K, N, J> { Quantity { value: self.value.hypot(other.value) } }
+
+    /// Whether `self` and `other` agree to the relative tolerance `rel`
+    /// (and to `abs` near zero).
+    ///
+    /// ```nabi
+    /// assert((0.1m + 0.2m).approx_eq(0.3m));
+    /// ```
+    pub fn approx_eq(self, other: Quantity<f64, L, M, T, I, K, N, J>, rel: f64 = 1e-12, abs: f64 = 0.0) -> bool {
+        let d = (self.value - other.value).abs();
+        d <= abs || d <= rel * self.value.abs().max(other.value.abs())
+    }
+
+    /// Whether the value is finite (not infinite, not NaN).
+    ///
+    /// ```nabi
+    /// assert(1m.is_finite());
+    /// ```
+    pub const fn is_finite(self) -> bool { self.value.is_finite() }
+
+    /// The value printed with a format spec chosen at run time, and the
+    /// SI unit after it. A spec known when writing the code goes in an
+    /// f-string, `f"{q:.3}"`, `f"{q:.2e}"`.
+    ///
+    /// ```nabi
+    /// let q = 1m / 3s;
+    /// assert(f"{q:.3}" == "0.333 m/s" && f"{1500N:.2e}" == "1.50e3 N");
+    /// let spec = ".2e";
+    /// assert(try! 1500N.format(spec) == "1.50e3 N");
+    /// ```
+    pub fn format(self, spec: str) throws (UnitError) -> str {
+        let n = try pkg::measure::format_number(self.value, spec);
+        let u = self.unit_symbol();
+        if u == "" { n } else { f"{n} {u}" }
+    }
+}
+
+impl Quantity<f64, 0, 0, 0, 0, 0, 0, 0> {
+    /// The sine of an angle (a dimensionless quantity in radians).
+    ///
+    /// ```nabi
+    /// assert(90deg.sin() == 1.0);
+    /// ```
+    pub fn sin(self) -> f64 { self.value.sin() }
+
+    /// The cosine of an angle.
+    ///
+    /// ```nabi
+    /// assert(0deg.cos() == 1.0);
+    /// ```
+    pub fn cos(self) -> f64 { self.value.cos() }
+
+    /// The tangent of an angle.
+    ///
+    /// ```nabi
+    /// assert((45deg.tan() - 1.0).abs() < 1e-15);
+    /// ```
+    pub fn tan(self) -> f64 { self.value.tan() }
+
+    /// `e^self`, for a dimensionless exponent (`(-E / (k_B * T)).exp()`).
+    ///
+    /// ```nabi
+    /// assert((1J / 1J).exp() == 1.0f64.exp());
+    /// ```
+    pub fn exp(self) -> f64 { self.value.exp() }
+
+    /// The natural logarithm of a ratio.
+    ///
+    /// ```nabi
+    /// assert((10m / 10m).ln() == 0.0);
+    /// ```
+    pub fn ln(self) -> f64 { self.value.ln() }
+}
+
+/// `√q` and `q.sqrt()`: the square root, for a quantity whose exponents
+/// are all even (an area, an energy per mass). One with an odd exponent
+/// has no SI square root and no `√`: a compile error; take the root of
+/// the number, `√q.value`.
+///
+/// ```nabi
+/// assert(√(9m²) == 3m);
+/// assert(16m².sqrt() == 4m);
+/// ```
+impl<const L: i32, const M: i32, const T: i32, const I: i32, const K: i32, const N: i32, const J: i32> ops::Sqrt for Quantity<f64, { 2 * L }, { 2 * M }, { 2 * T }, { 2 * I }, { 2 * K }, { 2 * N }, { 2 * J }> {
+    type Output = Quantity<f64, L, M, T, I, K, N, J>;
+    #[inline]
+    fn sqrt(self) -> Quantity<f64, L, M, T, I, K, N, J> { Quantity { value: self.value.sqrt() } }
+}
+
+impl<const L: i32, const M: i32, const T: i32, const I: i32, const K: i32, const N: i32, const J: i32> Quantity<f64, { 3 * L }, { 3 * M }, { 3 * T }, { 3 * I }, { 3 * K }, { 3 * N }, { 3 * J }> {
+    /// The cube root, for a quantity whose exponents are all multiples
+    /// of 3 (a volume); any other is a compile error.
+    ///
+    /// ```nabi
+    /// assert(8m³.cbrt() == 2m);
+    /// ```
+    pub fn cbrt(self) -> Quantity<f64, L, M, T, I, K, N, J> { Quantity { value: self.value.cbrt() } }
+}
+
+/// `q ** n` with a run-time `n` gives a dynamic `Measure` (the
+/// dimension depends on `n`); `q.powi::<3>()` and `q.squared()` stay
+/// static.
+impl<const L: i32, const M: i32, const T: i32, const I: i32, const K: i32, const N: i32, const J: i32> ops::Pow<i32> for Quantity<f64, L, M, T, I, K, N, J> {
+    type Output = Measure;
+    fn pow(self, n: i32) -> Measure { self.measure() ** n }
+}
+
+/// The value, then its coherent SI unit: `9.81 m/s²`, `3 N`; a
+/// dimensionless quantity prints the number alone.
+impl<V: Display, const L: i32, const M: i32, const T: i32, const I: i32, const K: i32, const N: i32, const J: i32> Display for Quantity<V, L, M, T, I, K, N, J> {
+    fn fmt(self, ref f: Formatter) throws (FmtError) {
+        try Display::fmt(self.value, ref f);
+        let u = self.dim().symbol();
+        if u != "" {
+            try f.write_str(" ");
+            try f.write_str(u);
+        }
+    }
+}
+
+/// `Quantity { value: 3.0 } /* m/s */` style, for `{:?}`.
+impl<V: Debug, const L: i32, const M: i32, const T: i32, const I: i32, const K: i32, const N: i32, const J: i32> Debug for Quantity<V, L, M, T, I, K, N, J> {
+    fn fmt(self, ref f: Formatter) throws (FmtError) {
+        try f.write_str("Quantity { value: ");
+        try Debug::fmt(self.value, ref f);
+        try f.write_str(f" }} /* {self.dim().symbol()} */");
+    }
+}
+
+impl<V: Clone, const L: i32, const M: i32, const T: i32, const I: i32, const K: i32, const N: i32, const J: i32> Clone for Quantity<V, L, M, T, I, K, N, J> {
+    fn clone(self) -> Quantity<V, L, M, T, I, K, N, J> { Quantity { value: self.value.clone() } }
+}

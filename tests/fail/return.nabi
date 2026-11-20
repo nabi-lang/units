@@ -1,0 +1,9 @@
+// expect: mismatched types
+// A function that promises a pressure and returns a force.
+use units::kinds::{Area, Force, Pressure};
+
+fn stress(f: Force, a: Area) -> Pressure { f * a }
+
+fn main() {
+    println(stress(1N, 1m²));
+}

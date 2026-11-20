@@ -1,0 +1,25 @@
+//! Unit parsing and dynamic conversion.
+
+use pkg::{DynUnit, Measure};
+use core::bench::Bench;
+use core::hint::black_box;
+
+#[bench]
+fn parse_compound(b: Bench) {
+    b.set_items(1);
+    b.iter(|| try! DynUnit::parse(black_box("kg*m^2/(s^3*A)")));
+}
+
+#[bench]
+fn parse_prefixed(b: Bench) {
+    b.set_items(1);
+    b.iter(|| try! DynUnit::parse(black_box("µm")));
+}
+
+#[bench]
+fn measure_convert(b: Bench) {
+    let m = try! Measure::parse("88 km/h");
+    let u = try! DynUnit::parse("mph");
+    b.set_items(1);
+    b.iter(|| try! black_box(m).to(black_box(u)));
+}

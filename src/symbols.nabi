@@ -1,0 +1,1066 @@
+//! Unit constants named by their symbols, to import the ones you need:
+//! `use units::symbols::{km, h, kg, m, s²};`. Each is a `Unit` constant, so
+//! `q.to(mi)` and `q.value_in(km / h)` check the dimension at compile
+//! time. Symbols that are not names are spelled out: `inch` (`in` is a
+//! keyword), `deg`, `percent`, `delta_degC`. `m²`, `s²`, `s⁻¹` and the like
+//! are names too, so `kg * m / s²` is a unit.
+
+use pkg::Unit;
+use pkg::temperature::Scale;
+
+/// `m`: 1.0 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::m.symbol() == "m");
+/// ```
+pub const m: Unit<1, 0, 0, 0, 0, 0, 0> = Unit::new("m", 1.0);
+/// `km`: 1e3 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::km.symbol() == "km");
+/// ```
+pub const km: Unit<1, 0, 0, 0, 0, 0, 0> = Unit::new("km", 1e3);
+/// `cm`: 1.0 / 1e2 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::cm.symbol() == "cm");
+/// ```
+pub const cm: Unit<1, 0, 0, 0, 0, 0, 0> = Unit::new("cm", 1.0 / 1e2);
+/// `mm`: 1.0 / 1e3 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::mm.symbol() == "mm");
+/// ```
+pub const mm: Unit<1, 0, 0, 0, 0, 0, 0> = Unit::new("mm", 1.0 / 1e3);
+/// `μm`: 1.0 / 1e6 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::μm.symbol() == "μm");
+/// ```
+pub const μm: Unit<1, 0, 0, 0, 0, 0, 0> = Unit::new("μm", 1.0 / 1e6);
+/// `um`: 1.0 / 1e6 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::um.symbol() == "um");
+/// ```
+pub const um: Unit<1, 0, 0, 0, 0, 0, 0> = Unit::new("um", 1.0 / 1e6);
+/// `nm`: 1.0 / 1e9 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::nm.symbol() == "nm");
+/// ```
+pub const nm: Unit<1, 0, 0, 0, 0, 0, 0> = Unit::new("nm", 1.0 / 1e9);
+/// `pm`: 1.0 / 1e12 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::pm.symbol() == "pm");
+/// ```
+pub const pm: Unit<1, 0, 0, 0, 0, 0, 0> = Unit::new("pm", 1.0 / 1e12);
+/// `fm`: 1.0 / 1e15 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::fm.symbol() == "fm");
+/// ```
+pub const fm: Unit<1, 0, 0, 0, 0, 0, 0> = Unit::new("fm", 1.0 / 1e15);
+/// `Å`: 1.0 / 1e10 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::Å.symbol() == "Å");
+/// ```
+pub const Å: Unit<1, 0, 0, 0, 0, 0, 0> = Unit::new("Å", 1.0 / 1e10);
+/// `in`: 0.0254 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::inch.symbol() == "in");
+/// ```
+pub const inch: Unit<1, 0, 0, 0, 0, 0, 0> = Unit::new("in", 0.0254);
+/// `ft`: 0.3048 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::ft.symbol() == "ft");
+/// ```
+pub const ft: Unit<1, 0, 0, 0, 0, 0, 0> = Unit::new("ft", 0.3048);
+/// `yd`: 0.9144 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::yd.symbol() == "yd");
+/// ```
+pub const yd: Unit<1, 0, 0, 0, 0, 0, 0> = Unit::new("yd", 0.9144);
+/// `mi`: 1609.344 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::mi.symbol() == "mi");
+/// ```
+pub const mi: Unit<1, 0, 0, 0, 0, 0, 0> = Unit::new("mi", 1609.344);
+/// `nmi`: 1852.0 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::nmi.symbol() == "nmi");
+/// ```
+pub const nmi: Unit<1, 0, 0, 0, 0, 0, 0> = Unit::new("nmi", 1852.0);
+/// `au`: 149597870700.0 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::au.symbol() == "au");
+/// ```
+pub const au: Unit<1, 0, 0, 0, 0, 0, 0> = Unit::new("au", 149597870700.0);
+/// `ly`: 9460730472580800.0 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::ly.symbol() == "ly");
+/// ```
+pub const ly: Unit<1, 0, 0, 0, 0, 0, 0> = Unit::new("ly", 9460730472580800.0);
+/// `pc`: 149597870700.0 * 648000.0 / pi SI units.
+///
+/// ```nabi
+/// assert(units::symbols::pc.symbol() == "pc");
+/// ```
+pub const pc: Unit<1, 0, 0, 0, 0, 0, 0> = Unit::new("pc", 149597870700.0 * 648000.0 / f64::PI);
+/// `m²`: 1.0 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::m².symbol() == "m²");
+/// ```
+pub const m²: Unit<2, 0, 0, 0, 0, 0, 0> = Unit::new("m²", 1.0);
+/// `km²`: 1e6 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::km².symbol() == "km²");
+/// ```
+pub const km²: Unit<2, 0, 0, 0, 0, 0, 0> = Unit::new("km²", 1e6);
+/// `cm²`: 1.0 / 1e4 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::cm².symbol() == "cm²");
+/// ```
+pub const cm²: Unit<2, 0, 0, 0, 0, 0, 0> = Unit::new("cm²", 1.0 / 1e4);
+/// `mm²`: 1.0 / 1e6 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::mm².symbol() == "mm²");
+/// ```
+pub const mm²: Unit<2, 0, 0, 0, 0, 0, 0> = Unit::new("mm²", 1.0 / 1e6);
+/// `ha`: 1e4 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::ha.symbol() == "ha");
+/// ```
+pub const ha: Unit<2, 0, 0, 0, 0, 0, 0> = Unit::new("ha", 1e4);
+/// `acre`: 4046.8564224 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::acre.symbol() == "acre");
+/// ```
+pub const acre: Unit<2, 0, 0, 0, 0, 0, 0> = Unit::new("acre", 4046.8564224);
+/// `m³`: 1.0 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::m³.symbol() == "m³");
+/// ```
+pub const m³: Unit<3, 0, 0, 0, 0, 0, 0> = Unit::new("m³", 1.0);
+/// `cm³`: 1.0 / 1e6 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::cm³.symbol() == "cm³");
+/// ```
+pub const cm³: Unit<3, 0, 0, 0, 0, 0, 0> = Unit::new("cm³", 1.0 / 1e6);
+/// `mm³`: 1.0 / 1e9 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::mm³.symbol() == "mm³");
+/// ```
+pub const mm³: Unit<3, 0, 0, 0, 0, 0, 0> = Unit::new("mm³", 1.0 / 1e9);
+/// `L`: 1.0 / 1e3 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::L.symbol() == "L");
+/// ```
+pub const L: Unit<3, 0, 0, 0, 0, 0, 0> = Unit::new("L", 1.0 / 1e3);
+/// `mL`: 1.0 / 1e6 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::mL.symbol() == "mL");
+/// ```
+pub const mL: Unit<3, 0, 0, 0, 0, 0, 0> = Unit::new("mL", 1.0 / 1e6);
+/// `μL`: 1.0 / 1e9 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::μL.symbol() == "μL");
+/// ```
+pub const μL: Unit<3, 0, 0, 0, 0, 0, 0> = Unit::new("μL", 1.0 / 1e9);
+/// `gal`: 3.785411784e-3 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::gal.symbol() == "gal");
+/// ```
+pub const gal: Unit<3, 0, 0, 0, 0, 0, 0> = Unit::new("gal", 3.785411784e-3);
+/// `kg`: 1.0 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::kg.symbol() == "kg");
+/// ```
+pub const kg: Unit<0, 1, 0, 0, 0, 0, 0> = Unit::new("kg", 1.0);
+/// `g`: 1.0 / 1e3 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::g.symbol() == "g");
+/// ```
+pub const g: Unit<0, 1, 0, 0, 0, 0, 0> = Unit::new("g", 1.0 / 1e3);
+/// `mg`: 1.0 / 1e6 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::mg.symbol() == "mg");
+/// ```
+pub const mg: Unit<0, 1, 0, 0, 0, 0, 0> = Unit::new("mg", 1.0 / 1e6);
+/// `μg`: 1.0 / 1e9 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::μg.symbol() == "μg");
+/// ```
+pub const μg: Unit<0, 1, 0, 0, 0, 0, 0> = Unit::new("μg", 1.0 / 1e9);
+/// `t`: 1e3 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::t.symbol() == "t");
+/// ```
+pub const t: Unit<0, 1, 0, 0, 0, 0, 0> = Unit::new("t", 1e3);
+/// `lb`: 0.45359237 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::lb.symbol() == "lb");
+/// ```
+pub const lb: Unit<0, 1, 0, 0, 0, 0, 0> = Unit::new("lb", 0.45359237);
+/// `oz`: 0.028349523125 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::oz.symbol() == "oz");
+/// ```
+pub const oz: Unit<0, 1, 0, 0, 0, 0, 0> = Unit::new("oz", 0.028349523125);
+/// `Da`: 1.66053906892e-27 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::Da.symbol() == "Da");
+/// ```
+pub const Da: Unit<0, 1, 0, 0, 0, 0, 0> = Unit::new("Da", 1.66053906892e-27);
+/// `s`: 1.0 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::s.symbol() == "s");
+/// ```
+pub const s: Unit<0, 0, 1, 0, 0, 0, 0> = Unit::new("s", 1.0);
+/// `ms`: 1.0 / 1e3 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::ms.symbol() == "ms");
+/// ```
+pub const ms: Unit<0, 0, 1, 0, 0, 0, 0> = Unit::new("ms", 1.0 / 1e3);
+/// `μs`: 1.0 / 1e6 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::μs.symbol() == "μs");
+/// ```
+pub const μs: Unit<0, 0, 1, 0, 0, 0, 0> = Unit::new("μs", 1.0 / 1e6);
+/// `us`: 1.0 / 1e6 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::us.symbol() == "us");
+/// ```
+pub const us: Unit<0, 0, 1, 0, 0, 0, 0> = Unit::new("us", 1.0 / 1e6);
+/// `ns`: 1.0 / 1e9 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::ns.symbol() == "ns");
+/// ```
+pub const ns: Unit<0, 0, 1, 0, 0, 0, 0> = Unit::new("ns", 1.0 / 1e9);
+/// `ps`: 1.0 / 1e12 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::ps.symbol() == "ps");
+/// ```
+pub const ps: Unit<0, 0, 1, 0, 0, 0, 0> = Unit::new("ps", 1.0 / 1e12);
+/// `min`: 60.0 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::min.symbol() == "min");
+/// ```
+pub const min: Unit<0, 0, 1, 0, 0, 0, 0> = Unit::new("min", 60.0);
+/// `h`: 3600.0 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::h.symbol() == "h");
+/// ```
+pub const h: Unit<0, 0, 1, 0, 0, 0, 0> = Unit::new("h", 3600.0);
+/// `d`: 86400.0 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::d.symbol() == "d");
+/// ```
+pub const d: Unit<0, 0, 1, 0, 0, 0, 0> = Unit::new("d", 86400.0);
+/// `wk`: 604800.0 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::wk.symbol() == "wk");
+/// ```
+pub const wk: Unit<0, 0, 1, 0, 0, 0, 0> = Unit::new("wk", 604800.0);
+/// `yr`: 31557600.0 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::yr.symbol() == "yr");
+/// ```
+pub const yr: Unit<0, 0, 1, 0, 0, 0, 0> = Unit::new("yr", 31557600.0);
+/// `s²`: 1.0 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::s².symbol() == "s²");
+/// ```
+pub const s²: Unit<0, 0, 2, 0, 0, 0, 0> = Unit::new("s²", 1.0);
+/// `s³`: 1.0 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::s³.symbol() == "s³");
+/// ```
+pub const s³: Unit<0, 0, 3, 0, 0, 0, 0> = Unit::new("s³", 1.0);
+/// `Hz`: 1.0 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::Hz.symbol() == "Hz");
+/// ```
+pub const Hz: Unit<0, 0, -1, 0, 0, 0, 0> = Unit::new("Hz", 1.0);
+/// `kHz`: 1e3 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::kHz.symbol() == "kHz");
+/// ```
+pub const kHz: Unit<0, 0, -1, 0, 0, 0, 0> = Unit::new("kHz", 1e3);
+/// `MHz`: 1e6 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::MHz.symbol() == "MHz");
+/// ```
+pub const MHz: Unit<0, 0, -1, 0, 0, 0, 0> = Unit::new("MHz", 1e6);
+/// `GHz`: 1e9 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::GHz.symbol() == "GHz");
+/// ```
+pub const GHz: Unit<0, 0, -1, 0, 0, 0, 0> = Unit::new("GHz", 1e9);
+/// `THz`: 1e12 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::THz.symbol() == "THz");
+/// ```
+pub const THz: Unit<0, 0, -1, 0, 0, 0, 0> = Unit::new("THz", 1e12);
+/// `rpm`: pi / 30.0 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::rpm.symbol() == "rpm");
+/// ```
+pub const rpm: Unit<0, 0, -1, 0, 0, 0, 0> = Unit::new("rpm", f64::PI / 30.0);
+/// `Bq`: 1.0 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::Bq.symbol() == "Bq");
+/// ```
+pub const Bq: Unit<0, 0, -1, 0, 0, 0, 0> = Unit::new("Bq", 1.0);
+/// `s⁻¹`: 1.0 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::s⁻¹.symbol() == "s⁻¹");
+/// ```
+pub const s⁻¹: Unit<0, 0, -1, 0, 0, 0, 0> = Unit::new("s⁻¹", 1.0);
+/// `s⁻²`: 1.0 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::s⁻².symbol() == "s⁻²");
+/// ```
+pub const s⁻²: Unit<0, 0, -2, 0, 0, 0, 0> = Unit::new("s⁻²", 1.0);
+/// `m⁻¹`: 1.0 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::m⁻¹.symbol() == "m⁻¹");
+/// ```
+pub const m⁻¹: Unit<-1, 0, 0, 0, 0, 0, 0> = Unit::new("m⁻¹", 1.0);
+/// `m⁻²`: 1.0 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::m⁻².symbol() == "m⁻²");
+/// ```
+pub const m⁻²: Unit<-2, 0, 0, 0, 0, 0, 0> = Unit::new("m⁻²", 1.0);
+/// `m⁻³`: 1.0 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::m⁻³.symbol() == "m⁻³");
+/// ```
+pub const m⁻³: Unit<-3, 0, 0, 0, 0, 0, 0> = Unit::new("m⁻³", 1.0);
+/// `kg⁻¹`: 1.0 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::kg⁻¹.symbol() == "kg⁻¹");
+/// ```
+pub const kg⁻¹: Unit<0, -1, 0, 0, 0, 0, 0> = Unit::new("kg⁻¹", 1.0);
+/// `K⁻¹`: 1.0 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::K⁻¹.symbol() == "K⁻¹");
+/// ```
+pub const K⁻¹: Unit<0, 0, 0, 0, -1, 0, 0> = Unit::new("K⁻¹", 1.0);
+/// `mol⁻¹`: 1.0 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::mol⁻¹.symbol() == "mol⁻¹");
+/// ```
+pub const mol⁻¹: Unit<0, 0, 0, 0, 0, -1, 0> = Unit::new("mol⁻¹", 1.0);
+/// `kn`: 1852.0 / 3600.0 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::kn.symbol() == "kn");
+/// ```
+pub const kn: Unit<1, 0, -1, 0, 0, 0, 0> = Unit::new("kn", 1852.0 / 3600.0);
+/// `mph`: 0.44704 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::mph.symbol() == "mph");
+/// ```
+pub const mph: Unit<1, 0, -1, 0, 0, 0, 0> = Unit::new("mph", 0.44704);
+/// `km/h`: 1.0 / 3.6 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::kph.symbol() == "km/h");
+/// ```
+pub const kph: Unit<1, 0, -1, 0, 0, 0, 0> = Unit::new("km/h", 1.0 / 3.6);
+/// `gn`: 9.80665 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::gn.symbol() == "gn");
+/// ```
+pub const gn: Unit<1, 0, -2, 0, 0, 0, 0> = Unit::new("gn", 9.80665);
+/// `N`: 1.0 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::N.symbol() == "N");
+/// ```
+pub const N: Unit<1, 1, -2, 0, 0, 0, 0> = Unit::new("N", 1.0);
+/// `kN`: 1e3 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::kN.symbol() == "kN");
+/// ```
+pub const kN: Unit<1, 1, -2, 0, 0, 0, 0> = Unit::new("kN", 1e3);
+/// `MN`: 1e6 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::MN.symbol() == "MN");
+/// ```
+pub const MN: Unit<1, 1, -2, 0, 0, 0, 0> = Unit::new("MN", 1e6);
+/// `mN`: 1.0 / 1e3 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::mN.symbol() == "mN");
+/// ```
+pub const mN: Unit<1, 1, -2, 0, 0, 0, 0> = Unit::new("mN", 1.0 / 1e3);
+/// `lbf`: 4.4482216152605 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::lbf.symbol() == "lbf");
+/// ```
+pub const lbf: Unit<1, 1, -2, 0, 0, 0, 0> = Unit::new("lbf", 4.4482216152605);
+/// `kgf`: 9.80665 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::kgf.symbol() == "kgf");
+/// ```
+pub const kgf: Unit<1, 1, -2, 0, 0, 0, 0> = Unit::new("kgf", 9.80665);
+/// `dyn`: 1.0 / 1e5 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::dyne.symbol() == "dyn");
+/// ```
+pub const dyne: Unit<1, 1, -2, 0, 0, 0, 0> = Unit::new("dyn", 1.0 / 1e5);
+/// `J`: 1.0 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::J.symbol() == "J");
+/// ```
+pub const J: Unit<2, 1, -2, 0, 0, 0, 0> = Unit::new("J", 1.0);
+/// `mJ`: 1.0 / 1e3 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::mJ.symbol() == "mJ");
+/// ```
+pub const mJ: Unit<2, 1, -2, 0, 0, 0, 0> = Unit::new("mJ", 1.0 / 1e3);
+/// `kJ`: 1e3 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::kJ.symbol() == "kJ");
+/// ```
+pub const kJ: Unit<2, 1, -2, 0, 0, 0, 0> = Unit::new("kJ", 1e3);
+/// `MJ`: 1e6 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::MJ.symbol() == "MJ");
+/// ```
+pub const MJ: Unit<2, 1, -2, 0, 0, 0, 0> = Unit::new("MJ", 1e6);
+/// `GJ`: 1e9 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::GJ.symbol() == "GJ");
+/// ```
+pub const GJ: Unit<2, 1, -2, 0, 0, 0, 0> = Unit::new("GJ", 1e9);
+/// `Wh`: 3600.0 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::Wh.symbol() == "Wh");
+/// ```
+pub const Wh: Unit<2, 1, -2, 0, 0, 0, 0> = Unit::new("Wh", 3600.0);
+/// `kWh`: 3.6e6 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::kWh.symbol() == "kWh");
+/// ```
+pub const kWh: Unit<2, 1, -2, 0, 0, 0, 0> = Unit::new("kWh", 3.6e6);
+/// `MWh`: 3.6e9 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::MWh.symbol() == "MWh");
+/// ```
+pub const MWh: Unit<2, 1, -2, 0, 0, 0, 0> = Unit::new("MWh", 3.6e9);
+/// `cal`: 4.184 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::cal.symbol() == "cal");
+/// ```
+pub const cal: Unit<2, 1, -2, 0, 0, 0, 0> = Unit::new("cal", 4.184);
+/// `kcal`: 4184.0 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::kcal.symbol() == "kcal");
+/// ```
+pub const kcal: Unit<2, 1, -2, 0, 0, 0, 0> = Unit::new("kcal", 4184.0);
+/// `Btu`: 1055.05585262 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::Btu.symbol() == "Btu");
+/// ```
+pub const Btu: Unit<2, 1, -2, 0, 0, 0, 0> = Unit::new("Btu", 1055.05585262);
+/// `eV`: 1.602176634e-19 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::eV.symbol() == "eV");
+/// ```
+pub const eV: Unit<2, 1, -2, 0, 0, 0, 0> = Unit::new("eV", 1.602176634e-19);
+/// `keV`: 1.602176634e-16 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::keV.symbol() == "keV");
+/// ```
+pub const keV: Unit<2, 1, -2, 0, 0, 0, 0> = Unit::new("keV", 1.602176634e-16);
+/// `MeV`: 1.602176634e-13 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::MeV.symbol() == "MeV");
+/// ```
+pub const MeV: Unit<2, 1, -2, 0, 0, 0, 0> = Unit::new("MeV", 1.602176634e-13);
+/// `GeV`: 1.602176634e-10 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::GeV.symbol() == "GeV");
+/// ```
+pub const GeV: Unit<2, 1, -2, 0, 0, 0, 0> = Unit::new("GeV", 1.602176634e-10);
+/// `TeV`: 1.602176634e-7 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::TeV.symbol() == "TeV");
+/// ```
+pub const TeV: Unit<2, 1, -2, 0, 0, 0, 0> = Unit::new("TeV", 1.602176634e-7);
+/// `erg`: 1.0 / 1e7 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::erg.symbol() == "erg");
+/// ```
+pub const erg: Unit<2, 1, -2, 0, 0, 0, 0> = Unit::new("erg", 1.0 / 1e7);
+/// `W`: 1.0 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::W.symbol() == "W");
+/// ```
+pub const W: Unit<2, 1, -3, 0, 0, 0, 0> = Unit::new("W", 1.0);
+/// `mW`: 1.0 / 1e3 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::mW.symbol() == "mW");
+/// ```
+pub const mW: Unit<2, 1, -3, 0, 0, 0, 0> = Unit::new("mW", 1.0 / 1e3);
+/// `kW`: 1e3 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::kW.symbol() == "kW");
+/// ```
+pub const kW: Unit<2, 1, -3, 0, 0, 0, 0> = Unit::new("kW", 1e3);
+/// `MW`: 1e6 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::MW.symbol() == "MW");
+/// ```
+pub const MW: Unit<2, 1, -3, 0, 0, 0, 0> = Unit::new("MW", 1e6);
+/// `GW`: 1e9 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::GW.symbol() == "GW");
+/// ```
+pub const GW: Unit<2, 1, -3, 0, 0, 0, 0> = Unit::new("GW", 1e9);
+/// `hp`: 745.6998715822702 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::hp.symbol() == "hp");
+/// ```
+pub const hp: Unit<2, 1, -3, 0, 0, 0, 0> = Unit::new("hp", 745.6998715822702);
+/// `Pa`: 1.0 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::Pa.symbol() == "Pa");
+/// ```
+pub const Pa: Unit<-1, 1, -2, 0, 0, 0, 0> = Unit::new("Pa", 1.0);
+/// `hPa`: 1e2 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::hPa.symbol() == "hPa");
+/// ```
+pub const hPa: Unit<-1, 1, -2, 0, 0, 0, 0> = Unit::new("hPa", 1e2);
+/// `kPa`: 1e3 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::kPa.symbol() == "kPa");
+/// ```
+pub const kPa: Unit<-1, 1, -2, 0, 0, 0, 0> = Unit::new("kPa", 1e3);
+/// `MPa`: 1e6 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::MPa.symbol() == "MPa");
+/// ```
+pub const MPa: Unit<-1, 1, -2, 0, 0, 0, 0> = Unit::new("MPa", 1e6);
+/// `GPa`: 1e9 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::GPa.symbol() == "GPa");
+/// ```
+pub const GPa: Unit<-1, 1, -2, 0, 0, 0, 0> = Unit::new("GPa", 1e9);
+/// `bar`: 1e5 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::bar.symbol() == "bar");
+/// ```
+pub const bar: Unit<-1, 1, -2, 0, 0, 0, 0> = Unit::new("bar", 1e5);
+/// `mbar`: 1e2 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::mbar.symbol() == "mbar");
+/// ```
+pub const mbar: Unit<-1, 1, -2, 0, 0, 0, 0> = Unit::new("mbar", 1e2);
+/// `atm`: 101325.0 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::atm.symbol() == "atm");
+/// ```
+pub const atm: Unit<-1, 1, -2, 0, 0, 0, 0> = Unit::new("atm", 101325.0);
+/// `psi`: 6894.757293168361 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::psi.symbol() == "psi");
+/// ```
+pub const psi: Unit<-1, 1, -2, 0, 0, 0, 0> = Unit::new("psi", 6894.757293168361);
+/// `Torr`: 101325.0 / 760.0 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::Torr.symbol() == "Torr");
+/// ```
+pub const Torr: Unit<-1, 1, -2, 0, 0, 0, 0> = Unit::new("Torr", 101325.0 / 760.0);
+/// `mmHg`: 133.322387415 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::mmHg.symbol() == "mmHg");
+/// ```
+pub const mmHg: Unit<-1, 1, -2, 0, 0, 0, 0> = Unit::new("mmHg", 133.322387415);
+/// `A`: 1.0 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::A.symbol() == "A");
+/// ```
+pub const A: Unit<0, 0, 0, 1, 0, 0, 0> = Unit::new("A", 1.0);
+/// `mA`: 1.0 / 1e3 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::mA.symbol() == "mA");
+/// ```
+pub const mA: Unit<0, 0, 0, 1, 0, 0, 0> = Unit::new("mA", 1.0 / 1e3);
+/// `μA`: 1.0 / 1e6 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::μA.symbol() == "μA");
+/// ```
+pub const μA: Unit<0, 0, 0, 1, 0, 0, 0> = Unit::new("μA", 1.0 / 1e6);
+/// `kA`: 1e3 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::kA.symbol() == "kA");
+/// ```
+pub const kA: Unit<0, 0, 0, 1, 0, 0, 0> = Unit::new("kA", 1e3);
+/// `V`: 1.0 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::V.symbol() == "V");
+/// ```
+pub const V: Unit<2, 1, -3, -1, 0, 0, 0> = Unit::new("V", 1.0);
+/// `mV`: 1.0 / 1e3 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::mV.symbol() == "mV");
+/// ```
+pub const mV: Unit<2, 1, -3, -1, 0, 0, 0> = Unit::new("mV", 1.0 / 1e3);
+/// `μV`: 1.0 / 1e6 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::μV.symbol() == "μV");
+/// ```
+pub const μV: Unit<2, 1, -3, -1, 0, 0, 0> = Unit::new("μV", 1.0 / 1e6);
+/// `kV`: 1e3 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::kV.symbol() == "kV");
+/// ```
+pub const kV: Unit<2, 1, -3, -1, 0, 0, 0> = Unit::new("kV", 1e3);
+/// `MV`: 1e6 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::MV.symbol() == "MV");
+/// ```
+pub const MV: Unit<2, 1, -3, -1, 0, 0, 0> = Unit::new("MV", 1e6);
+/// `Ω`: 1.0 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::Ω.symbol() == "Ω");
+/// ```
+pub const Ω: Unit<2, 1, -3, -2, 0, 0, 0> = Unit::new("Ω", 1.0);
+/// `mΩ`: 1.0 / 1e3 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::mΩ.symbol() == "mΩ");
+/// ```
+pub const mΩ: Unit<2, 1, -3, -2, 0, 0, 0> = Unit::new("mΩ", 1.0 / 1e3);
+/// `kΩ`: 1e3 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::kΩ.symbol() == "kΩ");
+/// ```
+pub const kΩ: Unit<2, 1, -3, -2, 0, 0, 0> = Unit::new("kΩ", 1e3);
+/// `MΩ`: 1e6 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::MΩ.symbol() == "MΩ");
+/// ```
+pub const MΩ: Unit<2, 1, -3, -2, 0, 0, 0> = Unit::new("MΩ", 1e6);
+/// `Ω`: 1.0 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::ohm.symbol() == "Ω");
+/// ```
+pub const ohm: Unit<2, 1, -3, -2, 0, 0, 0> = Unit::new("Ω", 1.0);
+/// `kΩ`: 1e3 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::kohm.symbol() == "kΩ");
+/// ```
+pub const kohm: Unit<2, 1, -3, -2, 0, 0, 0> = Unit::new("kΩ", 1e3);
+/// `C`: 1.0 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::C.symbol() == "C");
+/// ```
+pub const C: Unit<0, 0, 1, 1, 0, 0, 0> = Unit::new("C", 1.0);
+/// `mC`: 1.0 / 1e3 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::mC.symbol() == "mC");
+/// ```
+pub const mC: Unit<0, 0, 1, 1, 0, 0, 0> = Unit::new("mC", 1.0 / 1e3);
+/// `μC`: 1.0 / 1e6 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::μC.symbol() == "μC");
+/// ```
+pub const μC: Unit<0, 0, 1, 1, 0, 0, 0> = Unit::new("μC", 1.0 / 1e6);
+/// `nC`: 1.0 / 1e9 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::nC.symbol() == "nC");
+/// ```
+pub const nC: Unit<0, 0, 1, 1, 0, 0, 0> = Unit::new("nC", 1.0 / 1e9);
+/// `F`: 1.0 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::F.symbol() == "F");
+/// ```
+pub const F: Unit<-2, -1, 4, 2, 0, 0, 0> = Unit::new("F", 1.0);
+/// `mF`: 1.0 / 1e3 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::mF.symbol() == "mF");
+/// ```
+pub const mF: Unit<-2, -1, 4, 2, 0, 0, 0> = Unit::new("mF", 1.0 / 1e3);
+/// `μF`: 1.0 / 1e6 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::μF.symbol() == "μF");
+/// ```
+pub const μF: Unit<-2, -1, 4, 2, 0, 0, 0> = Unit::new("μF", 1.0 / 1e6);
+/// `uF`: 1.0 / 1e6 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::uF.symbol() == "uF");
+/// ```
+pub const uF: Unit<-2, -1, 4, 2, 0, 0, 0> = Unit::new("uF", 1.0 / 1e6);
+/// `nF`: 1.0 / 1e9 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::nF.symbol() == "nF");
+/// ```
+pub const nF: Unit<-2, -1, 4, 2, 0, 0, 0> = Unit::new("nF", 1.0 / 1e9);
+/// `pF`: 1.0 / 1e12 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::pF.symbol() == "pF");
+/// ```
+pub const pF: Unit<-2, -1, 4, 2, 0, 0, 0> = Unit::new("pF", 1.0 / 1e12);
+/// `S`: 1.0 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::S.symbol() == "S");
+/// ```
+pub const S: Unit<-2, -1, 3, 2, 0, 0, 0> = Unit::new("S", 1.0);
+/// `mS`: 1.0 / 1e3 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::mS.symbol() == "mS");
+/// ```
+pub const mS: Unit<-2, -1, 3, 2, 0, 0, 0> = Unit::new("mS", 1.0 / 1e3);
+/// `H`: 1.0 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::H.symbol() == "H");
+/// ```
+pub const H: Unit<2, 1, -2, -2, 0, 0, 0> = Unit::new("H", 1.0);
+/// `mH`: 1.0 / 1e3 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::mH.symbol() == "mH");
+/// ```
+pub const mH: Unit<2, 1, -2, -2, 0, 0, 0> = Unit::new("mH", 1.0 / 1e3);
+/// `μH`: 1.0 / 1e6 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::μH.symbol() == "μH");
+/// ```
+pub const μH: Unit<2, 1, -2, -2, 0, 0, 0> = Unit::new("μH", 1.0 / 1e6);
+/// `Wb`: 1.0 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::Wb.symbol() == "Wb");
+/// ```
+pub const Wb: Unit<2, 1, -2, -1, 0, 0, 0> = Unit::new("Wb", 1.0);
+/// `T`: 1.0 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::T.symbol() == "T");
+/// ```
+pub const T: Unit<0, 1, -2, -1, 0, 0, 0> = Unit::new("T", 1.0);
+/// `mT`: 1.0 / 1e3 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::mT.symbol() == "mT");
+/// ```
+pub const mT: Unit<0, 1, -2, -1, 0, 0, 0> = Unit::new("mT", 1.0 / 1e3);
+/// `μT`: 1.0 / 1e6 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::μT.symbol() == "μT");
+/// ```
+pub const μT: Unit<0, 1, -2, -1, 0, 0, 0> = Unit::new("μT", 1.0 / 1e6);
+/// `gauss`: 1.0 / 1e4 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::gauss.symbol() == "gauss");
+/// ```
+pub const gauss: Unit<0, 1, -2, -1, 0, 0, 0> = Unit::new("gauss", 1.0 / 1e4);
+/// `K`: 1.0 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::K.symbol() == "K");
+/// ```
+pub const K: Unit<0, 0, 0, 0, 1, 0, 0> = Unit::new("K", 1.0);
+/// `mK`: 1.0 / 1e3 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::mK.symbol() == "mK");
+/// ```
+pub const mK: Unit<0, 0, 0, 0, 1, 0, 0> = Unit::new("mK", 1.0 / 1e3);
+/// `Δ°C`: 1.0 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::delta_degC.symbol() == "Δ°C");
+/// ```
+pub const delta_degC: Unit<0, 0, 0, 0, 1, 0, 0> = Unit::new("Δ°C", 1.0);
+/// `Δ°F`: 5.0 / 9.0 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::delta_degF.symbol() == "Δ°F");
+/// ```
+pub const delta_degF: Unit<0, 0, 0, 0, 1, 0, 0> = Unit::new("Δ°F", 5.0 / 9.0);
+/// `mol`: 1.0 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::mol.symbol() == "mol");
+/// ```
+pub const mol: Unit<0, 0, 0, 0, 0, 1, 0> = Unit::new("mol", 1.0);
+/// `mmol`: 1.0 / 1e3 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::mmol.symbol() == "mmol");
+/// ```
+pub const mmol: Unit<0, 0, 0, 0, 0, 1, 0> = Unit::new("mmol", 1.0 / 1e3);
+/// `μmol`: 1.0 / 1e6 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::μmol.symbol() == "μmol");
+/// ```
+pub const μmol: Unit<0, 0, 0, 0, 0, 1, 0> = Unit::new("μmol", 1.0 / 1e6);
+/// `kmol`: 1e3 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::kmol.symbol() == "kmol");
+/// ```
+pub const kmol: Unit<0, 0, 0, 0, 0, 1, 0> = Unit::new("kmol", 1e3);
+/// `kat`: 1.0 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::kat.symbol() == "kat");
+/// ```
+pub const kat: Unit<0, 0, -1, 0, 0, 1, 0> = Unit::new("kat", 1.0);
+/// `cd`: 1.0 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::cd.symbol() == "cd");
+/// ```
+pub const cd: Unit<0, 0, 0, 0, 0, 0, 1> = Unit::new("cd", 1.0);
+/// `lm`: 1.0 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::lm.symbol() == "lm");
+/// ```
+pub const lm: Unit<0, 0, 0, 0, 0, 0, 1> = Unit::new("lm", 1.0);
+/// `lx`: 1.0 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::lx.symbol() == "lx");
+/// ```
+pub const lx: Unit<-2, 0, 0, 0, 0, 0, 1> = Unit::new("lx", 1.0);
+/// `Gy`: 1.0 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::Gy.symbol() == "Gy");
+/// ```
+pub const Gy: Unit<2, 0, -2, 0, 0, 0, 0> = Unit::new("Gy", 1.0);
+/// `Sv`: 1.0 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::Sv.symbol() == "Sv");
+/// ```
+pub const Sv: Unit<2, 0, -2, 0, 0, 0, 0> = Unit::new("Sv", 1.0);
+/// `mSv`: 1.0 / 1e3 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::mSv.symbol() == "mSv");
+/// ```
+pub const mSv: Unit<2, 0, -2, 0, 0, 0, 0> = Unit::new("mSv", 1.0 / 1e3);
+/// `rad`: 1.0 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::rad.symbol() == "rad");
+/// ```
+pub const rad: Unit<0, 0, 0, 0, 0, 0, 0> = Unit::new("rad", 1.0);
+/// `mrad`: 1.0 / 1e3 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::mrad.symbol() == "mrad");
+/// ```
+pub const mrad: Unit<0, 0, 0, 0, 0, 0, 0> = Unit::new("mrad", 1.0 / 1e3);
+/// `°`: pi / 180.0 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::deg.symbol() == "°");
+/// ```
+pub const deg: Unit<0, 0, 0, 0, 0, 0, 0> = Unit::new("°", f64::PI / 180.0);
+/// `′`: pi / 10800.0 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::arcmin.symbol() == "′");
+/// ```
+pub const arcmin: Unit<0, 0, 0, 0, 0, 0, 0> = Unit::new("′", f64::PI / 10800.0);
+/// `″`: pi / 648000.0 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::arcsec.symbol() == "″");
+/// ```
+pub const arcsec: Unit<0, 0, 0, 0, 0, 0, 0> = Unit::new("″", f64::PI / 648000.0);
+/// `sr`: 1.0 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::sr.symbol() == "sr");
+/// ```
+pub const sr: Unit<0, 0, 0, 0, 0, 0, 0> = Unit::new("sr", 1.0);
+/// `turn`: 2.0 * pi SI units.
+///
+/// ```nabi
+/// assert(units::symbols::turn.symbol() == "turn");
+/// ```
+pub const turn: Unit<0, 0, 0, 0, 0, 0, 0> = Unit::new("turn", 2.0 * f64::PI);
+/// `%`: 1.0 / 1e2 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::percent.symbol() == "%");
+/// ```
+pub const percent: Unit<0, 0, 0, 0, 0, 0, 0> = Unit::new("%", 1.0 / 1e2);
+/// `%`: 1.0 / 1e2 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::pct.symbol() == "%");
+/// ```
+pub const pct: Unit<0, 0, 0, 0, 0, 0, 0> = Unit::new("%", 1.0 / 1e2);
+/// `ppm`: 1.0 / 1e6 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::ppm.symbol() == "ppm");
+/// ```
+pub const ppm: Unit<0, 0, 0, 0, 0, 0, 0> = Unit::new("ppm", 1.0 / 1e6);
+/// The Celsius temperature scale, for `Temperature::to`.
+///
+/// ```nabi
+/// assert(units::symbols::degC == units::temperature::Scale::Celsius);
+/// ```
+pub const degC: Scale = Scale::Celsius;
+/// The Fahrenheit temperature scale, for `Temperature::to`.
+///
+/// ```nabi
+/// assert(units::symbols::degF == units::temperature::Scale::Fahrenheit);
+/// ```
+pub const degF: Scale = Scale::Fahrenheit;
+/// The Rankine temperature scale, for `Temperature::to`.
+///
+/// ```nabi
+/// assert(units::symbols::degR == units::temperature::Scale::Rankine);
+/// ```
+pub const degR: Scale = Scale::Rankine;
+/// The Kelvin temperature scale, for `Temperature::to`.
+///
+/// ```nabi
+/// assert(units::symbols::kelvin == units::temperature::Scale::Kelvin);
+/// ```
+pub const kelvin: Scale = Scale::Kelvin;

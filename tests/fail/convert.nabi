@@ -1,0 +1,7 @@
+// expect: mismatched types
+// Converting a length to a unit of time.
+use units::symbols::h;
+
+fn main() {
+    println(3km.to(h));
+}

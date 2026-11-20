@@ -1,0 +1,466 @@
+//! Names for the common dimensions, so signatures read as physics:
+//! `fn kinetic(m: Mass, v: Velocity) -> Energy`. Each takes the value
+//! type `V`, `f64` when left out (`Velocity` is `Velocity<f64>`; also
+//! `f32`, `Complex<f64>`, `Array<f64, R>`).
+
+use pkg::Quantity;
+
+/// A pure number (also angles in radians and ratios).
+///
+/// ```nabi
+/// use units::kinds::Dimensionless;
+///
+/// let q: Dimensionless = units::Quantity::si(1.0);
+/// assert(q.dim().exponents() == [0, 0, 0, 0, 0, 0, 0]);
+/// ```
+pub type Dimensionless<V = f64> = Quantity<V, 0, 0, 0, 0, 0, 0, 0>;
+
+/// Length (m).
+///
+/// ```nabi
+/// use units::kinds::Length;
+///
+/// let q: Length = units::Quantity::si(1.0);
+/// assert(q.dim().exponents() == [1, 0, 0, 0, 0, 0, 0]);
+/// ```
+pub type Length<V = f64> = Quantity<V, 1, 0, 0, 0, 0, 0, 0>;
+
+/// Mass (kg).
+///
+/// ```nabi
+/// use units::kinds::Mass;
+///
+/// let q: Mass = units::Quantity::si(1.0);
+/// assert(q.dim().exponents() == [0, 1, 0, 0, 0, 0, 0]);
+/// ```
+pub type Mass<V = f64> = Quantity<V, 0, 1, 0, 0, 0, 0, 0>;
+
+/// Time (s).
+///
+/// ```nabi
+/// use units::kinds::Time;
+///
+/// let q: Time = units::Quantity::si(1.0);
+/// assert(q.dim().exponents() == [0, 0, 1, 0, 0, 0, 0]);
+/// ```
+pub type Time<V = f64> = Quantity<V, 0, 0, 1, 0, 0, 0, 0>;
+
+/// Electric current (A).
+///
+/// ```nabi
+/// use units::kinds::Current;
+///
+/// let q: Current = units::Quantity::si(1.0);
+/// assert(q.dim().exponents() == [0, 0, 0, 1, 0, 0, 0]);
+/// ```
+pub type Current<V = f64> = Quantity<V, 0, 0, 0, 1, 0, 0, 0>;
+
+/// Thermodynamic temperature or a temperature difference (K). A reading on a scale with an offset (degC, degF) is a `Temperature`.
+///
+/// ```nabi
+/// use units::kinds::ThermodynamicTemperature;
+///
+/// let q: ThermodynamicTemperature = units::Quantity::si(1.0);
+/// assert(q.dim().exponents() == [0, 0, 0, 0, 1, 0, 0]);
+/// ```
+pub type ThermodynamicTemperature<V = f64> = Quantity<V, 0, 0, 0, 0, 1, 0, 0>;
+
+/// Amount of substance (mol).
+///
+/// ```nabi
+/// use units::kinds::Amount;
+///
+/// let q: Amount = units::Quantity::si(1.0);
+/// assert(q.dim().exponents() == [0, 0, 0, 0, 0, 1, 0]);
+/// ```
+pub type Amount<V = f64> = Quantity<V, 0, 0, 0, 0, 0, 1, 0>;
+
+/// Luminous intensity (cd); also luminous flux (lm = cd sr).
+///
+/// ```nabi
+/// use units::kinds::LuminousIntensity;
+///
+/// let q: LuminousIntensity = units::Quantity::si(1.0);
+/// assert(q.dim().exponents() == [0, 0, 0, 0, 0, 0, 1]);
+/// ```
+pub type LuminousIntensity<V = f64> = Quantity<V, 0, 0, 0, 0, 0, 0, 1>;
+
+/// Area (m²).
+///
+/// ```nabi
+/// use units::kinds::Area;
+///
+/// let q: Area = units::Quantity::si(1.0);
+/// assert(q.dim().exponents() == [2, 0, 0, 0, 0, 0, 0]);
+/// ```
+pub type Area<V = f64> = Quantity<V, 2, 0, 0, 0, 0, 0, 0>;
+
+/// Volume (m³).
+///
+/// ```nabi
+/// use units::kinds::Volume;
+///
+/// let q: Volume = units::Quantity::si(1.0);
+/// assert(q.dim().exponents() == [3, 0, 0, 0, 0, 0, 0]);
+/// ```
+pub type Volume<V = f64> = Quantity<V, 3, 0, 0, 0, 0, 0, 0>;
+
+/// Wavenumber, curvature (1/m).
+///
+/// ```nabi
+/// use units::kinds::Wavenumber;
+///
+/// let q: Wavenumber = units::Quantity::si(1.0);
+/// assert(q.dim().exponents() == [-1, 0, 0, 0, 0, 0, 0]);
+/// ```
+pub type Wavenumber<V = f64> = Quantity<V, -1, 0, 0, 0, 0, 0, 0>;
+
+/// Frequency, rate, angular velocity (1/s).
+///
+/// ```nabi
+/// use units::kinds::Frequency;
+///
+/// let q: Frequency = units::Quantity::si(1.0);
+/// assert(q.dim().exponents() == [0, 0, -1, 0, 0, 0, 0]);
+/// ```
+pub type Frequency<V = f64> = Quantity<V, 0, 0, -1, 0, 0, 0, 0>;
+
+/// Velocity (m/s).
+///
+/// ```nabi
+/// use units::kinds::Velocity;
+///
+/// let q: Velocity = units::Quantity::si(1.0);
+/// assert(q.dim().exponents() == [1, 0, -1, 0, 0, 0, 0]);
+/// ```
+pub type Velocity<V = f64> = Quantity<V, 1, 0, -1, 0, 0, 0, 0>;
+
+/// Acceleration (m/s²).
+///
+/// ```nabi
+/// use units::kinds::Acceleration;
+///
+/// let q: Acceleration = units::Quantity::si(1.0);
+/// assert(q.dim().exponents() == [1, 0, -2, 0, 0, 0, 0]);
+/// ```
+pub type Acceleration<V = f64> = Quantity<V, 1, 0, -2, 0, 0, 0, 0>;
+
+/// Jerk (m/s³).
+///
+/// ```nabi
+/// use units::kinds::Jerk;
+///
+/// let q: Jerk = units::Quantity::si(1.0);
+/// assert(q.dim().exponents() == [1, 0, -3, 0, 0, 0, 0]);
+/// ```
+pub type Jerk<V = f64> = Quantity<V, 1, 0, -3, 0, 0, 0, 0>;
+
+/// Momentum, impulse (N·s).
+///
+/// ```nabi
+/// use units::kinds::Momentum;
+///
+/// let q: Momentum = units::Quantity::si(1.0);
+/// assert(q.dim().exponents() == [1, 1, -1, 0, 0, 0, 0]);
+/// ```
+pub type Momentum<V = f64> = Quantity<V, 1, 1, -1, 0, 0, 0, 0>;
+
+/// Force (N).
+///
+/// ```nabi
+/// use units::kinds::Force;
+///
+/// let q: Force = units::Quantity::si(1.0);
+/// assert(q.dim().exponents() == [1, 1, -2, 0, 0, 0, 0]);
+/// ```
+pub type Force<V = f64> = Quantity<V, 1, 1, -2, 0, 0, 0, 0>;
+
+/// Energy, work, heat, torque (J).
+///
+/// ```nabi
+/// use units::kinds::Energy;
+///
+/// let q: Energy = units::Quantity::si(1.0);
+/// assert(q.dim().exponents() == [2, 1, -2, 0, 0, 0, 0]);
+/// ```
+pub type Energy<V = f64> = Quantity<V, 2, 1, -2, 0, 0, 0, 0>;
+
+/// Power (W).
+///
+/// ```nabi
+/// use units::kinds::Power;
+///
+/// let q: Power = units::Quantity::si(1.0);
+/// assert(q.dim().exponents() == [2, 1, -3, 0, 0, 0, 0]);
+/// ```
+pub type Power<V = f64> = Quantity<V, 2, 1, -3, 0, 0, 0, 0>;
+
+/// Action, angular momentum (J·s).
+///
+/// ```nabi
+/// use units::kinds::Action;
+///
+/// let q: Action = units::Quantity::si(1.0);
+/// assert(q.dim().exponents() == [2, 1, -1, 0, 0, 0, 0]);
+/// ```
+pub type Action<V = f64> = Quantity<V, 2, 1, -1, 0, 0, 0, 0>;
+
+/// Pressure, stress (Pa).
+///
+/// ```nabi
+/// use units::kinds::Pressure;
+///
+/// let q: Pressure = units::Quantity::si(1.0);
+/// assert(q.dim().exponents() == [-1, 1, -2, 0, 0, 0, 0]);
+/// ```
+pub type Pressure<V = f64> = Quantity<V, -1, 1, -2, 0, 0, 0, 0>;
+
+/// Mass density (kg/m³).
+///
+/// ```nabi
+/// use units::kinds::Density;
+///
+/// let q: Density = units::Quantity::si(1.0);
+/// assert(q.dim().exponents() == [-3, 1, 0, 0, 0, 0, 0]);
+/// ```
+pub type Density<V = f64> = Quantity<V, -3, 1, 0, 0, 0, 0, 0>;
+
+/// Dynamic viscosity (Pa·s).
+///
+/// ```nabi
+/// use units::kinds::DynamicViscosity;
+///
+/// let q: DynamicViscosity = units::Quantity::si(1.0);
+/// assert(q.dim().exponents() == [-1, 1, -1, 0, 0, 0, 0]);
+/// ```
+pub type DynamicViscosity<V = f64> = Quantity<V, -1, 1, -1, 0, 0, 0, 0>;
+
+/// Kinematic viscosity, diffusivity (m²/s).
+///
+/// ```nabi
+/// use units::kinds::KinematicViscosity;
+///
+/// let q: KinematicViscosity = units::Quantity::si(1.0);
+/// assert(q.dim().exponents() == [2, 0, -1, 0, 0, 0, 0]);
+/// ```
+pub type KinematicViscosity<V = f64> = Quantity<V, 2, 0, -1, 0, 0, 0, 0>;
+
+/// Surface tension, stiffness (N/m).
+///
+/// ```nabi
+/// use units::kinds::SurfaceTension;
+///
+/// let q: SurfaceTension = units::Quantity::si(1.0);
+/// assert(q.dim().exponents() == [0, 1, -2, 0, 0, 0, 0]);
+/// ```
+pub type SurfaceTension<V = f64> = Quantity<V, 0, 1, -2, 0, 0, 0, 0>;
+
+/// Electric charge (C).
+///
+/// ```nabi
+/// use units::kinds::Charge;
+///
+/// let q: Charge = units::Quantity::si(1.0);
+/// assert(q.dim().exponents() == [0, 0, 1, 1, 0, 0, 0]);
+/// ```
+pub type Charge<V = f64> = Quantity<V, 0, 0, 1, 1, 0, 0, 0>;
+
+/// Voltage, electric potential (V).
+///
+/// ```nabi
+/// use units::kinds::Voltage;
+///
+/// let q: Voltage = units::Quantity::si(1.0);
+/// assert(q.dim().exponents() == [2, 1, -3, -1, 0, 0, 0]);
+/// ```
+pub type Voltage<V = f64> = Quantity<V, 2, 1, -3, -1, 0, 0, 0>;
+
+/// Electric resistance, impedance (Ω).
+///
+/// ```nabi
+/// use units::kinds::Resistance;
+///
+/// let q: Resistance = units::Quantity::si(1.0);
+/// assert(q.dim().exponents() == [2, 1, -3, -2, 0, 0, 0]);
+/// ```
+pub type Resistance<V = f64> = Quantity<V, 2, 1, -3, -2, 0, 0, 0>;
+
+/// Electric conductance (S).
+///
+/// ```nabi
+/// use units::kinds::Conductance;
+///
+/// let q: Conductance = units::Quantity::si(1.0);
+/// assert(q.dim().exponents() == [-2, -1, 3, 2, 0, 0, 0]);
+/// ```
+pub type Conductance<V = f64> = Quantity<V, -2, -1, 3, 2, 0, 0, 0>;
+
+/// Capacitance (F).
+///
+/// ```nabi
+/// use units::kinds::Capacitance;
+///
+/// let q: Capacitance = units::Quantity::si(1.0);
+/// assert(q.dim().exponents() == [-2, -1, 4, 2, 0, 0, 0]);
+/// ```
+pub type Capacitance<V = f64> = Quantity<V, -2, -1, 4, 2, 0, 0, 0>;
+
+/// Inductance (H).
+///
+/// ```nabi
+/// use units::kinds::Inductance;
+///
+/// let q: Inductance = units::Quantity::si(1.0);
+/// assert(q.dim().exponents() == [2, 1, -2, -2, 0, 0, 0]);
+/// ```
+pub type Inductance<V = f64> = Quantity<V, 2, 1, -2, -2, 0, 0, 0>;
+
+/// Magnetic flux (Wb).
+///
+/// ```nabi
+/// use units::kinds::MagneticFlux;
+///
+/// let q: MagneticFlux = units::Quantity::si(1.0);
+/// assert(q.dim().exponents() == [2, 1, -2, -1, 0, 0, 0]);
+/// ```
+pub type MagneticFlux<V = f64> = Quantity<V, 2, 1, -2, -1, 0, 0, 0>;
+
+/// Magnetic flux density (T).
+///
+/// ```nabi
+/// use units::kinds::MagneticFluxDensity;
+///
+/// let q: MagneticFluxDensity = units::Quantity::si(1.0);
+/// assert(q.dim().exponents() == [0, 1, -2, -1, 0, 0, 0]);
+/// ```
+pub type MagneticFluxDensity<V = f64> = Quantity<V, 0, 1, -2, -1, 0, 0, 0>;
+
+/// Electric field strength (V/m).
+///
+/// ```nabi
+/// use units::kinds::ElectricField;
+///
+/// let q: ElectricField = units::Quantity::si(1.0);
+/// assert(q.dim().exponents() == [1, 1, -3, -1, 0, 0, 0]);
+/// ```
+pub type ElectricField<V = f64> = Quantity<V, 1, 1, -3, -1, 0, 0, 0>;
+
+/// Permittivity (F/m).
+///
+/// ```nabi
+/// use units::kinds::Permittivity;
+///
+/// let q: Permittivity = units::Quantity::si(1.0);
+/// assert(q.dim().exponents() == [-3, -1, 4, 2, 0, 0, 0]);
+/// ```
+pub type Permittivity<V = f64> = Quantity<V, -3, -1, 4, 2, 0, 0, 0>;
+
+/// Permeability (H/m).
+///
+/// ```nabi
+/// use units::kinds::Permeability;
+///
+/// let q: Permeability = units::Quantity::si(1.0);
+/// assert(q.dim().exponents() == [1, 1, -2, -2, 0, 0, 0]);
+/// ```
+pub type Permeability<V = f64> = Quantity<V, 1, 1, -2, -2, 0, 0, 0>;
+
+/// Entropy, heat capacity (J/K).
+///
+/// ```nabi
+/// use units::kinds::Entropy;
+///
+/// let q: Entropy = units::Quantity::si(1.0);
+/// assert(q.dim().exponents() == [2, 1, -2, 0, -1, 0, 0]);
+/// ```
+pub type Entropy<V = f64> = Quantity<V, 2, 1, -2, 0, -1, 0, 0>;
+
+/// Specific heat capacity (J/(kg·K)).
+///
+/// ```nabi
+/// use units::kinds::SpecificHeat;
+///
+/// let q: SpecificHeat = units::Quantity::si(1.0);
+/// assert(q.dim().exponents() == [2, 0, -2, 0, -1, 0, 0]);
+/// ```
+pub type SpecificHeat<V = f64> = Quantity<V, 2, 0, -2, 0, -1, 0, 0>;
+
+/// Thermal conductivity (W/(m·K)).
+///
+/// ```nabi
+/// use units::kinds::ThermalConductivity;
+///
+/// let q: ThermalConductivity = units::Quantity::si(1.0);
+/// assert(q.dim().exponents() == [1, 1, -3, 0, -1, 0, 0]);
+/// ```
+pub type ThermalConductivity<V = f64> = Quantity<V, 1, 1, -3, 0, -1, 0, 0>;
+
+/// Molar mass (kg/mol).
+///
+/// ```nabi
+/// use units::kinds::MolarMass;
+///
+/// let q: MolarMass = units::Quantity::si(1.0);
+/// assert(q.dim().exponents() == [0, 1, 0, 0, 0, -1, 0]);
+/// ```
+pub type MolarMass<V = f64> = Quantity<V, 0, 1, 0, 0, 0, -1, 0>;
+
+/// Molar energy (J/mol).
+///
+/// ```nabi
+/// use units::kinds::MolarEnergy;
+///
+/// let q: MolarEnergy = units::Quantity::si(1.0);
+/// assert(q.dim().exponents() == [2, 1, -2, 0, 0, -1, 0]);
+/// ```
+pub type MolarEnergy<V = f64> = Quantity<V, 2, 1, -2, 0, 0, -1, 0>;
+
+/// Molar entropy, molar heat capacity (J/(mol·K)).
+///
+/// ```nabi
+/// use units::kinds::MolarEntropy;
+///
+/// let q: MolarEntropy = units::Quantity::si(1.0);
+/// assert(q.dim().exponents() == [2, 1, -2, 0, -1, -1, 0]);
+/// ```
+pub type MolarEntropy<V = f64> = Quantity<V, 2, 1, -2, 0, -1, -1, 0>;
+
+/// Amount concentration (mol/m³).
+///
+/// ```nabi
+/// use units::kinds::Concentration;
+///
+/// let q: Concentration = units::Quantity::si(1.0);
+/// assert(q.dim().exponents() == [-3, 0, 0, 0, 0, 1, 0]);
+/// ```
+pub type Concentration<V = f64> = Quantity<V, -3, 0, 0, 0, 0, 1, 0>;
+
+/// Catalytic activity (kat).
+///
+/// ```nabi
+/// use units::kinds::CatalyticActivity;
+///
+/// let q: CatalyticActivity = units::Quantity::si(1.0);
+/// assert(q.dim().exponents() == [0, 0, -1, 0, 0, 1, 0]);
+/// ```
+pub type CatalyticActivity<V = f64> = Quantity<V, 0, 0, -1, 0, 0, 1, 0>;
+
+/// Illuminance (lx).
+///
+/// ```nabi
+/// use units::kinds::Illuminance;
+///
+/// let q: Illuminance = units::Quantity::si(1.0);
+/// assert(q.dim().exponents() == [-2, 0, 0, 0, 0, 0, 1]);
+/// ```
+pub type Illuminance<V = f64> = Quantity<V, -2, 0, 0, 0, 0, 0, 1>;
+
+/// Absorbed or equivalent dose (Gy, Sv); also specific energy (J/kg).
+///
+/// ```nabi
+/// use units::kinds::AbsorbedDose;
+///
+/// let q: AbsorbedDose = units::Quantity::si(1.0);
+/// assert(q.dim().exponents() == [2, 0, -2, 0, 0, 0, 0]);
+/// ```
+pub type AbsorbedDose<V = f64> = Quantity<V, 2, 0, -2, 0, 0, 0, 0>;

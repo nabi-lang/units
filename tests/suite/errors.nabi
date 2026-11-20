@@ -1,0 +1,57 @@
+// Error messages: what went wrong, both dimensions, what to write.
+
+use pkg::tests::suite::{error_of, expect, message};
+use pkg::{DynUnit, Measure, UnitError};
+
+#[test]
+fn mismatch_names_both_sides() {
+    let m = message(|| try (try Measure::parse("3 m/s")).to_str("s"));
+    expect(m.contains("m/s (velocity, L·T⁻¹)") && m.contains("s (time, T)"), m);
+    expect(m.contains("divide by an acceleration (m/s²)"), m);
+    let w = message(|| try (try Measure::parse("5 J")).to_str("W"));
+    expect(w.contains("J (energy") && w.contains("W (power") && w.contains("divide by a time (s)"), w);
+    let n = message(|| try (try Measure::parse("2 kg")).to_str("N"));
+    expect(n.contains("multiply by an acceleration (m/s²)"), n);
+    let sum = try Measure::parse("1 m") catch _ { panic("m") };
+    match sum + Measure::new(1.0, DynUnit::coherent(pkg::Dim::TIME)) {
+        Result::Err(e) => expect(f"{e}".contains("cannot add m (length, L) and s (time, T)"), f"{e}"),
+        Result::Ok(_) => panic("added a length and a time"),
+    }
+}
+
+#[test]
+fn unknown_units_suggest() {
+    expect(message(|| try DynUnit::parse("kgf")) == "", "kgf is known");
+    let m = message(|| try DynUnit::parse("metr"));
+    expect(m.contains("unknown unit `metr`") && m.contains("did you mean `m`"), m);
+    let p = message(|| try DynUnit::parse("Pascals"));
+    expect(p == "", "names are case-insensitive");
+    let z = message(|| try DynUnit::parse("zorkmid"));
+    expect(z.contains("write an SI symbol"), z);
+    match error_of(|| try DynUnit::parse("fot")) {
+        e: UnitError => match e {
+            UnitError::Unknown { text, suggestion } => expect(text == "fot" && suggestion == "ft", f"{suggestion}"),
+            _ => panic("not Unknown"),
+        },
+        none => panic("fot parsed"),
+    }
+}
+
+#[test]
+fn syntax_errors_point() {
+    let cases = [
+        ("", "empty"),
+        ("kg*/s", "byte 3"),
+        ("(m/s", "not closed"),
+        ("m^", "needs an integer"),
+        ("m/", "missing at the end"),
+        ("m⁻", "superscript digits"),
+        ("3 kg", "expected a unit"),
+    ];
+    for (text, want) in cases {
+        let m = message(|| try DynUnit::parse(text));
+        expect(m.contains(want), f"`{text}`: {m}");
+    }
+    let v = message(|| try Measure::parse("1.2.3 m"));
+    expect(v != "", "bad number");
+}

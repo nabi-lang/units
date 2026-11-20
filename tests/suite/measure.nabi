@@ -1,0 +1,66 @@
+// Dynamic quantities: arithmetic, conversion, and the static bridge.
+
+use pkg::kinds::{Energy, Velocity};
+use pkg::symbols::{km, h};
+use pkg::tests::suite::{expect, message, rel};
+use pkg::{DynUnit, Measure, Quantity, UnitError};
+
+#[test]
+fn arithmetic() {
+    let d = try! Measure::parse("12 km");
+    let t = try! Measure::parse("30 min");
+    let v = d / t;
+    expect(v.unit.symbol == "km/min", "quotient unit");
+    rel((try! v.to_str("km/h")).value, 24.0, 1e-15, "to km/h");
+    let s = try! (d + try! Measure::parse("500 m")).get();
+    expect(s.value == 12.5 && s.unit.symbol == "km", "sum in the left unit");
+    let diff = try! (d - try! Measure::parse("2 mi")).get();
+    rel(diff.value, 12.0 - 3.218688, 1e-15, "difference");
+    expect((d + t).is_err(), "length plus time");
+    let a = (try! Measure::parse("3 m")) ** 2;
+    expect(a.unit.symbol == "m²" && a.value == 9.0, "power");
+    expect((-d).value == -12.0, "negation");
+    expect((d * 2.0).value == 24.0 && (d / 4.0).value == 3.0, "scalar");
+    expect(try! Measure::parse("1 km") == try! Measure::parse("1000 m"), "equal across units");
+    expect(try! Measure::parse("1 km") != try! Measure::parse("1 s"), "different dimensions");
+}
+
+#[test]
+fn bridge() {
+    let v: Velocity = try! (try! Measure::parse("36 km/h")).fixed();
+    rel(v.value, 10.0, 1e-15, "dynamic to static");
+    let e: Energy = try! Quantity::from_measure(try! Measure::parse("1 kWh"));
+    expect(e == 3.6MJ, "kWh");
+    let back = v.measure();
+    expect(back.unit.symbol == "m/s" && back.value == v.value, "static to dynamic");
+    let q = try! (10m / 1s).convert(try! DynUnit::parse("km/h"));
+    rel(q.value, 36.0, 1e-15, "convert");
+    expect((2m ** 3).unit.dim.length == 3, "static ** gives a measure");
+    let u: pkg::Unit<1, 0, -1, 0, 0, 0, 0> = try! (try! DynUnit::parse("knot")).fixed();
+    rel(u.of(1.0).value, 1852.0 / 3600.0, 1e-15, "fixed unit");
+    expect((km / h).dynamic().dim == v.dim(), "static unit to dynamic");
+}
+
+#[test]
+fn bridge_mismatch() {
+    let m = try! Measure::parse("3 s");
+    let r = Result::catching(|| -> Velocity { try m.fixed() });
+    expect(r.is_err(), "time is not a velocity");
+    try (try! Measure::parse("3 s")).to_str("m") catch e: UnitError {
+        expect(f"{e}".contains("cannot convert s (time, T) to m (length, L)"), f"{e}");
+    };
+}
+
+#[test]
+fn formatting() {
+    let q = 1m / 3s;
+    expect(f"{q:.3}" == "0.333 m/s" && f"{q:>12.2}" == "    0.33 m/s" && f"{q:<9.1}|" == "0.3 m/s  |", "f-string precision and width");
+    expect(f"{1500N:.1}" == "1500.0 N" && f"{2m / 2m:.2}" == "1.00" && f"{20degC:.1}" == "20.0 °C", "f-string specs");
+    expect(f"{1500N:.2e}" == "1.50e3 N" && f"{1500m / 1s:e}" == "1.5e3 m/s" && f"{2m / 2m:.1e}" == "1.0e0", "f-string exponent");
+    expect(f"{try! Measure::parse("2.5 km"):.2e}" == "2.50e0 km", "measure exponent");
+    let specs = [".3", ".2e", ".1"];
+    expect(try! (1m / 3s).format(specs[0]) == "0.333 m/s" && try! 1500N.format(specs[1]) == "1.50e3 N", "a run-time spec");
+    expect(try! (2m / 2m).format(specs[2]) == "1.0", "dimensionless");
+    expect(try! (try! Measure::parse("2.5 km")).format(".2") == "2.50 km", "measure");
+    expect(message(|| try (1m / 3s).format("zz")).contains("format spec"), "bad spec");
+}

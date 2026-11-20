@@ -1,0 +1,8 @@
+// expect: mismatched types
+// A length times a time is not a velocity.
+use units::kinds::Velocity;
+
+fn main() {
+    let v: Velocity = 1m * 1s;
+    println(v);
+}

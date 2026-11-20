@@ -1,0 +1,46 @@
+//! Tests: dimension algebra, conversion factors against NIST SP 811,
+//! temperature scales, parsing round trips, CODATA values and the
+//! identities between them, literals and operators, array quantities,
+//! errors, and compile-fail cases for static mismatches.
+
+mod array;
+mod compile;
+mod constants;
+mod convert;
+mod dims;
+mod errors;
+mod measure;
+mod parse;
+mod syntax;
+mod temperature;
+
+use pkg::UnitError;
+
+/// Panic with `what` unless `ok`.
+pub fn expect(ok: bool, what: str) {
+    if !ok { panic(f"check failed: {what}"); }
+}
+
+/// Panic unless `|a - b| <= tol`.
+pub fn close(a: f64, b: f64, tol: f64, what: str) {
+    if !((a - b).abs() <= tol) { panic(f"{what}: {a} != {b} (tol {tol})"); }
+}
+
+/// Panic unless `a` and `b` agree to the relative tolerance `rel`.
+pub fn rel(a: f64, b: f64, rel: f64, what: str) {
+    if !((a - b).abs() <= rel * b.abs()) { panic(f"{what}: {a} != {b} (rel {rel})"); }
+}
+
+/// The error `f` throws, or `none`.
+pub fn error_of<T>(f: fn() throws (UnitError) -> T) -> UnitError? {
+    try f() catch e: UnitError { return e; };
+    none
+}
+
+/// The message of the error `f` throws ("" when it does not throw).
+pub fn message<T>(f: fn() throws (UnitError) -> T) -> str {
+    match error_of(f) {
+        e: UnitError => f"{e}",
+        none => "",
+    }
+}

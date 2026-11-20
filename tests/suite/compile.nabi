@@ -1,0 +1,51 @@
+// Static mismatches do not compile: each program in tests/fail builds
+// against this package and must fail with the error its first line
+// names. Needs a `nabi` to run: `$NABI`, else `nabi` on the path; the
+// test says so and passes when there is none.
+
+use pkg::tests::suite::expect;
+use std::env;
+use std::fs;
+use std::process::Command;
+
+fn find_nabi() -> str | none {
+    let given = try env::var("NABI") catch _ { "" };
+    for cand in [given, "nabi"] {
+        if cand == "" { continue; }
+        let ok = try Command::new(cand).arg("--version").output() catch _ { continue; };
+        if ok.status.success() { return cand; }
+    }
+    none
+}
+
+#[test]
+fn static_mismatches_do_not_compile() {
+    let nabi = match find_nabi() {
+        n: str => n,
+        none => {
+            println("compile-fail cases skipped: no `nabi` (set NABI=/path/to/nabi)");
+            return;
+        }
+    };
+    let root = f"{try! env::current_dir()}";
+    let work = f"{env::temp_dir()}/units-compile-fail";
+    try fs::remove_dir_all(work) catch _ {};
+    let cases = 0;
+    try! for entry in try! fs::read_dir(f"{root}/tests/fail") {
+        let path = f"{entry.path()}";
+        if !path.ends_with(".nabi") { continue; }
+        let src = try! fs::read_to_str(path);
+        let want = (src.lines().next() ?? "").strip_prefix("// expect: ") ?? panic(f"{path}: first line must be `// expect: <message>`");
+        let dir = f"{work}/case{cases}";
+        try! fs::create_dir_all(f"{dir}/src");
+        try! fs::write(f"{dir}/nabi.nabion", f"Package {{ name: \"case\", version: \"0.1.0\", toolchain: \"0.1\", deps: {{ \"units\": Dep::path(\"{root}\") }} }}\n");
+        try! fs::write(f"{dir}/src/main.nabi", src);
+        let out = try! Command::new(nabi).arg("build").current_dir(dir).output();
+        let err = str::from_utf8_lossy(out.stderr);
+        expect(!out.status.success(), f"{path} compiled");
+        expect(err.contains(want), f"{path}: expected `{want}` in:\n{err}");
+        cases += 1;
+    }
+    try fs::remove_dir_all(work) catch _ {};
+    expect(cases >= 8, f"found {cases} cases");
+}

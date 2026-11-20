@@ -1,0 +1,71 @@
+//! Operators for unit code (feature `ops`, on by default):
+//!
+//!   q → u     the quantity expressed in unit `u` (level of `|`)
+//!   x°        degrees as an angle in radians (postfix, level of `?`)
+//!   √q        square root of a quantity (core's `√`, always on)
+//!
+//! Each also has a named form: `q.to(u)`, `deg.of(x)`, `q.sqrt()`.
+
+use pkg::temperature::Scale;
+use pkg::{DynUnit, Measure, Quantity, Temperature, Unit, UnitError};
+
+/// `q → u`: the quantity in unit `u`, for printing (`3km → mi` prints
+/// `1.8641135767120018 mi`). Binds like `|`: looser than arithmetic,
+/// tighter than comparison, so `a + b → km` converts the sum. Static
+/// quantities take static units and the types check the dimension; a
+/// `Measure` takes a `DynUnit` and gives a `Result`.
+///
+/// ```nabi
+/// use units::symbols::{degF, h, km, m, mi, s};
+///
+/// assert((5km → mi).unit.symbol == "mi");
+/// assert((1km + 500m → m).value == 1500.0);
+/// assert((36km / 1h → m / s).value == 10.0);
+/// assert((20degC → degF).value == 68.0);
+/// ```
+pub trait Convert<Rhs> {
+    type Output;
+    #[infix("→", like = "|")]
+    fn convert_to(self, unit: Rhs) -> Output;
+}
+
+impl<const L: i32, const M: i32, const T: i32, const I: i32, const K: i32, const N: i32, const J: i32> Convert<Unit<L, M, T, I, K, N, J>> for Quantity<f64, L, M, T, I, K, N, J> {
+    type Output = Measure;
+    fn convert_to(self, unit: Unit<L, M, T, I, K, N, J>) -> Measure { self.to(unit) }
+}
+
+impl Convert<Scale> for Temperature {
+    type Output = Measure;
+    fn convert_to(self, scale: Scale) -> Measure { self.to(scale) }
+}
+
+impl Convert<DynUnit> for Measure {
+    type Output = Result<Measure, UnitError>;
+    fn convert_to(self, unit: DynUnit) -> Result<Measure, UnitError> { Result::catching(|| try self.to(unit)) }
+}
+
+/// `x°`: `x` degrees as an angle, a dimensionless quantity in radians
+/// (`90°` is pi/2). Binds like postfix `?`, so `-30°` is `-(30°)` and
+/// `(a + b)°` takes the sum.
+///
+/// ```nabi
+/// use units::ops::Degrees;
+///
+/// assert((180°).value == f64::PI);
+/// assert((90°).sin() == 1.0);
+/// ```
+pub trait Degrees {
+    type Output;
+    #[postfix("°", like = "?")]
+    fn degrees(self) -> Output;
+}
+
+impl Degrees for f64 {
+    type Output = Quantity<f64, 0, 0, 0, 0, 0, 0, 0>;
+    fn degrees(self) -> Quantity<f64, 0, 0, 0, 0, 0, 0, 0> { Quantity { value: self * (f64::PI / 180.0) } }
+}
+
+impl Degrees for i64 {
+    type Output = Quantity<f64, 0, 0, 0, 0, 0, 0, 0>;
+    fn degrees(self) -> Quantity<f64, 0, 0, 0, 0, 0, 0, 0> { Quantity { value: (self as f64) * (f64::PI / 180.0) } }
+}

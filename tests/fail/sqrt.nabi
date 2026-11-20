@@ -1,0 +1,6 @@
+// expect: operator `√` cannot be applied
+// A length has no SI square root: the exponent 1 is odd.
+fn main() {
+    let r = √(3m);
+    println(r);
+}

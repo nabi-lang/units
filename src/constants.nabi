@@ -1,0 +1,316 @@
+//! Physical constants: the seven defining constants of the SI and the
+//! exact values derived from them (CODATA 2018, unchanged in 2022), and
+//! the measured ones from the CODATA 2022 adjustment. Each is a
+//! `Quantity` constant; `codata()` lists them with their standard
+//! uncertainties.
+
+use pkg::Quantity;
+
+/// A CODATA value with its standard uncertainty.
+///
+/// ```nabi
+/// let g = units::constants::lookup("G") ?? panic("G");
+/// assert(!g.exact && g.uncertainty == 0.00015e-11);
+/// assert((g.relative_uncertainty() - 2.2474e-5).abs() < 1e-8);
+/// ```
+#[derive(Clone, PartialEq, Debug)]
+pub struct Codata {
+    /// The usual symbol (`"ħ"`, `"N_A"`).
+    pub symbol: str;
+    /// The CODATA name.
+    pub name: str;
+    /// The value in the SI unit `unit`.
+    pub value: f64;
+    /// The standard uncertainty (0 for an exact value).
+    pub uncertainty: f64;
+    /// The SI unit of `value`.
+    pub unit: str;
+    /// Whether the value is exact by the definition of the SI.
+    pub exact: bool;
+}
+
+impl Codata {
+    /// `uncertainty / |value|`.
+    ///
+    /// ```nabi
+    /// assert((units::constants::lookup("c") ?? panic("c")).relative_uncertainty() == 0.0);
+    /// ```
+    pub fn relative_uncertainty(self) -> f64 { self.uncertainty / self.value.abs() }
+}
+
+/// c, the speed of light in vacuum: 299792458.0 m/s (exact).
+///
+/// ```nabi
+/// assert(units::constants::c.value == (units::constants::lookup("c") ?? panic("c")).value);
+/// ```
+pub const c: Quantity<f64, 1, 0, -1, 0, 0, 0, 0> = Quantity { value: 299792458.0 };
+
+/// h, the Planck constant: 6.62607015e-34 J·s (exact).
+///
+/// ```nabi
+/// assert(units::constants::h.value == (units::constants::lookup("h") ?? panic("h")).value);
+/// ```
+pub const h: Quantity<f64, 2, 1, -1, 0, 0, 0, 0> = Quantity { value: 6.62607015e-34 };
+
+/// ħ, the reduced Planck constant: 6.62607015e-34 / (2.0 * pi) J·s (exact).
+///
+/// ```nabi
+/// assert(units::constants::hbar.value == (units::constants::lookup("ħ") ?? panic("ħ")).value);
+/// ```
+pub const hbar: Quantity<f64, 2, 1, -1, 0, 0, 0, 0> = Quantity { value: 6.62607015e-34 / (2.0 * f64::PI) };
+
+/// `hbar` under its symbol.
+///
+/// ```nabi
+/// assert(units::constants::ħ == units::constants::hbar);
+/// ```
+pub const ħ: Quantity<f64, 2, 1, -1, 0, 0, 0, 0> = hbar;
+
+/// e, the elementary charge: 1.602176634e-19 C (exact).
+///
+/// ```nabi
+/// assert(units::constants::e.value == (units::constants::lookup("e") ?? panic("e")).value);
+/// ```
+pub const e: Quantity<f64, 0, 0, 1, 1, 0, 0, 0> = Quantity { value: 1.602176634e-19 };
+
+/// k, the Boltzmann constant: 1.380649e-23 J/K (exact).
+///
+/// ```nabi
+/// assert(units::constants::k_B.value == (units::constants::lookup("k") ?? panic("k")).value);
+/// ```
+pub const k_B: Quantity<f64, 2, 1, -2, 0, -1, 0, 0> = Quantity { value: 1.380649e-23 };
+
+/// N_A, the Avogadro constant: 6.02214076e23 1/mol (exact).
+///
+/// ```nabi
+/// assert(units::constants::N_A.value == (units::constants::lookup("N_A") ?? panic("N_A")).value);
+/// ```
+pub const N_A: Quantity<f64, 0, 0, 0, 0, 0, -1, 0> = Quantity { value: 6.02214076e23 };
+
+/// Δν_Cs, the hyperfine transition frequency of Cs-133: 9192631770.0 Hz (exact).
+///
+/// ```nabi
+/// assert(units::constants::delta_nu_Cs.value == (units::constants::lookup("Δν_Cs") ?? panic("Δν_Cs")).value);
+/// ```
+pub const delta_nu_Cs: Quantity<f64, 0, 0, -1, 0, 0, 0, 0> = Quantity { value: 9192631770.0 };
+
+/// K_cd, the luminous efficacy of 540 THz radiation: 683.0 lm/W (exact).
+///
+/// ```nabi
+/// assert(units::constants::K_cd.value == (units::constants::lookup("K_cd") ?? panic("K_cd")).value);
+/// ```
+pub const K_cd: Quantity<f64, -2, -1, 3, 0, 0, 0, 1> = Quantity { value: 683.0 };
+
+/// R, the molar gas constant: 6.02214076e23 * 1.380649e-23 J/(mol·K) (exact).
+///
+/// ```nabi
+/// assert(units::constants::R.value == (units::constants::lookup("R") ?? panic("R")).value);
+/// ```
+pub const R: Quantity<f64, 2, 1, -2, 0, -1, -1, 0> = Quantity { value: 6.02214076e23 * 1.380649e-23 };
+
+/// F, the Faraday constant: 6.02214076e23 * 1.602176634e-19 C/mol (exact).
+///
+/// ```nabi
+/// assert(units::constants::F.value == (units::constants::lookup("F") ?? panic("F")).value);
+/// ```
+pub const F: Quantity<f64, 0, 0, 1, 1, 0, -1, 0> = Quantity { value: 6.02214076e23 * 1.602176634e-19 };
+
+/// σ, the Stefan-Boltzmann constant: 5.670374419184429453970996731889e-8 W/(m²·K⁴) (exact).
+///
+/// ```nabi
+/// assert(units::constants::sigma.value == (units::constants::lookup("σ") ?? panic("σ")).value);
+/// ```
+pub const sigma: Quantity<f64, 0, 1, -3, 0, -4, 0, 0> = Quantity { value: 5.670374419184429453970996731889e-8 };
+
+/// `sigma` under its symbol.
+///
+/// ```nabi
+/// assert(units::constants::σ == units::constants::sigma);
+/// ```
+pub const σ: Quantity<f64, 0, 1, -3, 0, -4, 0, 0> = sigma;
+
+/// G, the Newtonian constant of gravitation: 6.67430e-11 m³/(kg·s²) (CODATA 2022, standard uncertainty 0.00015e-11).
+///
+/// ```nabi
+/// assert(units::constants::G.value == (units::constants::lookup("G") ?? panic("G")).value);
+/// ```
+pub const G: Quantity<f64, 3, -1, -2, 0, 0, 0, 0> = Quantity { value: 6.67430e-11 };
+
+/// g_n, the standard acceleration of gravity: 9.80665 m/s² (exact).
+///
+/// ```nabi
+/// assert(units::constants::g_n.value == (units::constants::lookup("g_n") ?? panic("g_n")).value);
+/// ```
+pub const g_n: Quantity<f64, 1, 0, -2, 0, 0, 0, 0> = Quantity { value: 9.80665 };
+
+/// α, the fine-structure constant: 7.2973525643e-3 1 (CODATA 2022, standard uncertainty 0.0000000011e-3).
+///
+/// ```nabi
+/// assert(units::constants::alpha.value == (units::constants::lookup("α") ?? panic("α")).value);
+/// ```
+pub const alpha: Quantity<f64, 0, 0, 0, 0, 0, 0, 0> = Quantity { value: 7.2973525643e-3 };
+
+/// `alpha` under its symbol.
+///
+/// ```nabi
+/// assert(units::constants::α == units::constants::alpha);
+/// ```
+pub const α: Quantity<f64, 0, 0, 0, 0, 0, 0, 0> = alpha;
+
+/// μ₀, the vacuum magnetic permeability: 1.25663706127e-6 N/A² (CODATA 2022, standard uncertainty 0.00000000020e-6).
+///
+/// ```nabi
+/// assert(units::constants::mu_0.value == (units::constants::lookup("μ₀") ?? panic("μ₀")).value);
+/// ```
+pub const mu_0: Quantity<f64, 1, 1, -2, -2, 0, 0, 0> = Quantity { value: 1.25663706127e-6 };
+
+/// `mu_0` under its symbol.
+///
+/// ```nabi
+/// assert(units::constants::μ₀ == units::constants::mu_0);
+/// ```
+pub const μ₀: Quantity<f64, 1, 1, -2, -2, 0, 0, 0> = mu_0;
+
+/// ε₀, the vacuum electric permittivity: 8.8541878188e-12 F/m (CODATA 2022, standard uncertainty 0.0000000014e-12).
+///
+/// ```nabi
+/// assert(units::constants::epsilon_0.value == (units::constants::lookup("ε₀") ?? panic("ε₀")).value);
+/// ```
+pub const epsilon_0: Quantity<f64, -3, -1, 4, 2, 0, 0, 0> = Quantity { value: 8.8541878188e-12 };
+
+/// `epsilon_0` under its symbol.
+///
+/// ```nabi
+/// assert(units::constants::ε₀ == units::constants::epsilon_0);
+/// ```
+pub const ε₀: Quantity<f64, -3, -1, 4, 2, 0, 0, 0> = epsilon_0;
+
+/// Z₀, the characteristic impedance of vacuum: 376.730313412 Ω (CODATA 2022, standard uncertainty 0.000000059).
+///
+/// ```nabi
+/// assert(units::constants::Z_0.value == (units::constants::lookup("Z₀") ?? panic("Z₀")).value);
+/// ```
+pub const Z_0: Quantity<f64, 2, 1, -3, -2, 0, 0, 0> = Quantity { value: 376.730313412 };
+
+/// m_e, the electron mass: 9.1093837139e-31 kg (CODATA 2022, standard uncertainty 0.0000000028e-31).
+///
+/// ```nabi
+/// assert(units::constants::m_e.value == (units::constants::lookup("m_e") ?? panic("m_e")).value);
+/// ```
+pub const m_e: Quantity<f64, 0, 1, 0, 0, 0, 0, 0> = Quantity { value: 9.1093837139e-31 };
+
+/// m_p, the proton mass: 1.67262192595e-27 kg (CODATA 2022, standard uncertainty 0.00000000052e-27).
+///
+/// ```nabi
+/// assert(units::constants::m_p.value == (units::constants::lookup("m_p") ?? panic("m_p")).value);
+/// ```
+pub const m_p: Quantity<f64, 0, 1, 0, 0, 0, 0, 0> = Quantity { value: 1.67262192595e-27 };
+
+/// m_n, the neutron mass: 1.67492750056e-27 kg (CODATA 2022, standard uncertainty 0.00000000085e-27).
+///
+/// ```nabi
+/// assert(units::constants::m_n.value == (units::constants::lookup("m_n") ?? panic("m_n")).value);
+/// ```
+pub const m_n: Quantity<f64, 0, 1, 0, 0, 0, 0, 0> = Quantity { value: 1.67492750056e-27 };
+
+/// m_u, the atomic mass constant: 1.66053906892e-27 kg (CODATA 2022, standard uncertainty 0.00000000052e-27).
+///
+/// ```nabi
+/// assert(units::constants::m_u.value == (units::constants::lookup("m_u") ?? panic("m_u")).value);
+/// ```
+pub const m_u: Quantity<f64, 0, 1, 0, 0, 0, 0, 0> = Quantity { value: 1.66053906892e-27 };
+
+/// a_0, the Bohr radius: 5.29177210544e-11 m (CODATA 2022, standard uncertainty 0.00000000082e-11).
+///
+/// ```nabi
+/// assert(units::constants::a_0.value == (units::constants::lookup("a_0") ?? panic("a_0")).value);
+/// ```
+pub const a_0: Quantity<f64, 1, 0, 0, 0, 0, 0, 0> = Quantity { value: 5.29177210544e-11 };
+
+/// R_∞, the Rydberg constant: 10973731.568157 1/m (CODATA 2022, standard uncertainty 0.000012).
+///
+/// ```nabi
+/// assert(units::constants::R_inf.value == (units::constants::lookup("R_∞") ?? panic("R_∞")).value);
+/// ```
+pub const R_inf: Quantity<f64, -1, 0, 0, 0, 0, 0, 0> = Quantity { value: 10973731.568157 };
+
+/// μ_B, the Bohr magneton: 9.2740100657e-24 J/T (CODATA 2022, standard uncertainty 0.0000000029e-24).
+///
+/// ```nabi
+/// assert(units::constants::mu_B.value == (units::constants::lookup("μ_B") ?? panic("μ_B")).value);
+/// ```
+pub const mu_B: Quantity<f64, 2, 0, 0, 1, 0, 0, 0> = Quantity { value: 9.2740100657e-24 };
+
+/// r_e, the classical electron radius: 2.8179403205e-15 m (CODATA 2022, standard uncertainty 0.0000000013e-15).
+///
+/// ```nabi
+/// assert(units::constants::r_e.value == (units::constants::lookup("r_e") ?? panic("r_e")).value);
+/// ```
+pub const r_e: Quantity<f64, 1, 0, 0, 0, 0, 0, 0> = Quantity { value: 2.8179403205e-15 };
+
+/// atm, the standard atmosphere: 101325.0 Pa (exact).
+///
+/// ```nabi
+/// assert(units::constants::atm.value == (units::constants::lookup("atm") ?? panic("atm")).value);
+/// ```
+pub const atm: Quantity<f64, -1, 1, -2, 0, 0, 0, 0> = Quantity { value: 101325.0 };
+
+/// eV, the electronvolt: 1.602176634e-19 J (exact).
+///
+/// ```nabi
+/// assert(units::constants::eV.value == (units::constants::lookup("eV") ?? panic("eV")).value);
+/// ```
+pub const eV: Quantity<f64, 2, 1, -2, 0, 0, 0, 0> = Quantity { value: 1.602176634e-19 };
+
+const TABLE: [Codata; 27] = [
+    Codata { symbol: "c", name: "speed of light in vacuum", value: 299792458.0, uncertainty: 0.0, unit: "m/s", exact: true },
+    Codata { symbol: "h", name: "Planck constant", value: 6.62607015e-34, uncertainty: 0.0, unit: "J·s", exact: true },
+    Codata { symbol: "ħ", name: "reduced Planck constant", value: 6.62607015e-34 / (2.0 * f64::PI), uncertainty: 0.0, unit: "J·s", exact: true },
+    Codata { symbol: "e", name: "elementary charge", value: 1.602176634e-19, uncertainty: 0.0, unit: "C", exact: true },
+    Codata { symbol: "k", name: "Boltzmann constant", value: 1.380649e-23, uncertainty: 0.0, unit: "J/K", exact: true },
+    Codata { symbol: "N_A", name: "Avogadro constant", value: 6.02214076e23, uncertainty: 0.0, unit: "1/mol", exact: true },
+    Codata { symbol: "Δν_Cs", name: "hyperfine transition frequency of Cs-133", value: 9192631770.0, uncertainty: 0.0, unit: "Hz", exact: true },
+    Codata { symbol: "K_cd", name: "luminous efficacy of 540 THz radiation", value: 683.0, uncertainty: 0.0, unit: "lm/W", exact: true },
+    Codata { symbol: "R", name: "molar gas constant", value: 6.02214076e23 * 1.380649e-23, uncertainty: 0.0, unit: "J/(mol·K)", exact: true },
+    Codata { symbol: "F", name: "Faraday constant", value: 6.02214076e23 * 1.602176634e-19, uncertainty: 0.0, unit: "C/mol", exact: true },
+    Codata { symbol: "σ", name: "Stefan-Boltzmann constant", value: 5.670374419184429453970996731889e-8, uncertainty: 0.0, unit: "W/(m²·K⁴)", exact: true },
+    Codata { symbol: "G", name: "Newtonian constant of gravitation", value: 6.67430e-11, uncertainty: 0.00015e-11, unit: "m³/(kg·s²)", exact: false },
+    Codata { symbol: "g_n", name: "standard acceleration of gravity", value: 9.80665, uncertainty: 0.0, unit: "m/s²", exact: true },
+    Codata { symbol: "α", name: "fine-structure constant", value: 7.2973525643e-3, uncertainty: 0.0000000011e-3, unit: "1", exact: false },
+    Codata { symbol: "μ₀", name: "vacuum magnetic permeability", value: 1.25663706127e-6, uncertainty: 0.00000000020e-6, unit: "N/A²", exact: false },
+    Codata { symbol: "ε₀", name: "vacuum electric permittivity", value: 8.8541878188e-12, uncertainty: 0.0000000014e-12, unit: "F/m", exact: false },
+    Codata { symbol: "Z₀", name: "characteristic impedance of vacuum", value: 376.730313412, uncertainty: 0.000000059, unit: "Ω", exact: false },
+    Codata { symbol: "m_e", name: "electron mass", value: 9.1093837139e-31, uncertainty: 0.0000000028e-31, unit: "kg", exact: false },
+    Codata { symbol: "m_p", name: "proton mass", value: 1.67262192595e-27, uncertainty: 0.00000000052e-27, unit: "kg", exact: false },
+    Codata { symbol: "m_n", name: "neutron mass", value: 1.67492750056e-27, uncertainty: 0.00000000085e-27, unit: "kg", exact: false },
+    Codata { symbol: "m_u", name: "atomic mass constant", value: 1.66053906892e-27, uncertainty: 0.00000000052e-27, unit: "kg", exact: false },
+    Codata { symbol: "a_0", name: "Bohr radius", value: 5.29177210544e-11, uncertainty: 0.00000000082e-11, unit: "m", exact: false },
+    Codata { symbol: "R_∞", name: "Rydberg constant", value: 10973731.568157, uncertainty: 0.000012, unit: "1/m", exact: false },
+    Codata { symbol: "μ_B", name: "Bohr magneton", value: 9.2740100657e-24, uncertainty: 0.0000000029e-24, unit: "J/T", exact: false },
+    Codata { symbol: "r_e", name: "classical electron radius", value: 2.8179403205e-15, uncertainty: 0.0000000013e-15, unit: "m", exact: false },
+    Codata { symbol: "atm", name: "standard atmosphere", value: 101325.0, uncertainty: 0.0, unit: "Pa", exact: true },
+    Codata { symbol: "eV", name: "electronvolt", value: 1.602176634e-19, uncertainty: 0.0, unit: "J", exact: true },
+];
+
+/// Every constant of this module, with its uncertainty.
+///
+/// ```nabi
+/// assert(units::constants::codata().len() >= 20);
+/// ```
+pub fn codata() -> List<Codata> {
+    let out: List<Codata> = List::with_capacity(TABLE.len());
+    for c in TABLE { out.push(c); }
+    out
+}
+
+/// The constant with symbol or name `text` (`"h"`, `"ħ"`, `"electron mass"`).
+///
+/// ```nabi
+/// assert((units::constants::lookup("electron mass") ?? panic("m_e")).symbol == "m_e");
+/// ```
+pub fn lookup(text: str) -> Codata | none {
+    for c in TABLE {
+        if c.symbol == text || c.name == text { return c; }
+    }
+    none
+}

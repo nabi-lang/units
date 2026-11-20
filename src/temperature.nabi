@@ -1,0 +1,319 @@
+//! Temperature readings on the Kelvin, Celsius, Fahrenheit and Rankine
+//! scales. A reading is a point, not an amount: two readings subtract
+//! to a difference (a kelvin `Quantity`), a difference adds to a
+//! reading, and adding two readings does not compile, so `20degC +
+//! 10degC` cannot quietly mean 576.3 K.
+
+use pkg::kinds::ThermodynamicTemperature;
+use pkg::{DynUnit, Measure, Quantity};
+
+/// A temperature scale.
+///
+/// ```nabi
+/// use units::temperature::Scale;
+///
+/// assert(Scale::Fahrenheit.symbol() == "°F");
+/// ```
+#[derive(Clone, Copy, PartialEq, Debug)]
+pub enum Scale {
+    /// Kelvin, absolute.
+    Kelvin,
+    /// Celsius: kelvin minus 273.15.
+    Celsius,
+    /// Fahrenheit: 9/5 Celsius plus 32.
+    Fahrenheit,
+    /// Rankine: 9/5 kelvin.
+    Rankine,
+}
+
+impl Scale {
+    /// The symbol: `K`, `°C`, `°F`, `°R`.
+    ///
+    /// ```nabi
+    /// use units::temperature::Scale;
+    ///
+    /// assert(Scale::Celsius.symbol() == "°C");
+    /// ```
+    pub const fn symbol(self) -> str {
+        match self {
+            Scale::Kelvin => "K",
+            Scale::Celsius => "°C",
+            Scale::Fahrenheit => "°F",
+            Scale::Rankine => "°R",
+        }
+    }
+
+    const fn index(self) -> i32 {
+        match self {
+            Scale::Kelvin => 0,
+            Scale::Celsius => 1,
+            Scale::Fahrenheit => 2,
+            Scale::Rankine => 3,
+        }
+    }
+
+    // One degree in kelvin, and kelvin at zero of the scale.
+    const fn step(self) -> f64 {
+        match self {
+            Scale::Kelvin | Scale::Celsius => 1.0,
+            Scale::Fahrenheit | Scale::Rankine => 5.0 / 9.0,
+        }
+    }
+
+    const fn zero(self) -> f64 {
+        match self {
+            Scale::Kelvin | Scale::Rankine => 0.0,
+            Scale::Celsius => 273.15,
+            Scale::Fahrenheit => 273.15 - 32.0 * 5.0 / 9.0,
+        }
+    }
+
+    /// The scale a dynamic unit stands for, by its size and offset
+    /// (`degC`, `°F`, `K`, `degR`), or `none`.
+    ///
+    /// ```nabi
+    /// use units::DynUnit;
+    /// use units::temperature::Scale;
+    ///
+    /// assert(Scale::of_unit(try! DynUnit::parse("°F")) == Scale::Fahrenheit);
+    /// assert(Scale::of_unit(try! DynUnit::parse("m")) == none);
+    /// ```
+    pub fn of_unit(u: DynUnit) -> Scale | none {
+        if u.dim != pkg::Dim::TEMPERATURE { return none; }
+        for sc in [Scale::Kelvin, Scale::Celsius, Scale::Fahrenheit, Scale::Rankine] {
+            if u.scale == sc.step() && u.offset == sc.zero() { return sc; }
+        }
+        none
+    }
+
+    /// The scale as a dynamic unit with its offset, for `Measure`.
+    ///
+    /// ```nabi
+    /// use units::temperature::Scale;
+    ///
+    /// assert(Scale::Celsius.unit().offset == 273.15);
+    /// ```
+    pub fn unit(self) -> DynUnit {
+        DynUnit { symbol: self.symbol(), scale: self.step(), offset: self.zero(), dim: pkg::Dim::TEMPERATURE }
+    }
+}
+
+/// An absolute temperature, a reading on any scale. `20degC`,
+/// `68degF` and `Temperature::from_kelvin(293.15)` are one value. The
+/// reading keeps its own scale, so converting between Celsius and
+/// Fahrenheit takes one exact step (`20degC` is exactly `68degF`).
+///
+/// ```nabi
+/// use units::Temperature;
+/// use units::symbols::{degF, K};
+///
+/// let t = 20degC;
+/// assert(t.fahrenheit() == 68.0);
+/// let warmer = t + 5K;
+/// assert(warmer - t == 5K);
+/// println(t.to(degF)); // 68 °F
+/// ```
+#[derive(Clone, Copy, Debug)]
+pub struct Temperature {
+    pub(pkg) value: f64;
+    pub(pkg) scale: Scale;
+}
+
+// `v` on scale `a` read on scale `b`: Celsius and Fahrenheit through
+// Celsius, the absolute scales by their ratio.
+const fn convert(v: f64, a: Scale, b: Scale) -> f64 {
+    if a.index() == b.index() { return v; }
+    match (a, b) {
+        (Scale::Kelvin, Scale::Rankine) => return v * 9.0 / 5.0,
+        (Scale::Rankine, Scale::Kelvin) => return v * 5.0 / 9.0,
+        (Scale::Fahrenheit, Scale::Rankine) => return v + 459.67,
+        (Scale::Rankine, Scale::Fahrenheit) => return v - 459.67,
+        _ => {}
+    }
+    let c = match a {
+        Scale::Kelvin => v - 273.15,
+        Scale::Celsius => v,
+        Scale::Fahrenheit => (v - 32.0) * 5.0 / 9.0,
+        Scale::Rankine => (v - 491.67) * 5.0 / 9.0,
+    };
+    match b {
+        Scale::Kelvin => c + 273.15,
+        Scale::Celsius => c,
+        Scale::Fahrenheit => c * 9.0 / 5.0 + 32.0,
+        Scale::Rankine => (c + 273.15) * 9.0 / 5.0,
+    }
+}
+
+impl Temperature {
+    /// The reading `k` kelvin.
+    ///
+    /// ```nabi
+    /// use units::Temperature;
+    ///
+    /// assert(Temperature::from_kelvin(0.0).celsius() == -273.15);
+    /// ```
+    pub const fn from_kelvin(k: f64) -> Temperature { Temperature { value: k, scale: Scale::Kelvin } }
+
+    /// The reading `c` degrees Celsius.
+    ///
+    /// ```nabi
+    /// use units::Temperature;
+    ///
+    /// assert(Temperature::from_celsius(100.0).kelvin() == 373.15);
+    /// ```
+    pub const fn from_celsius(c: f64) -> Temperature { Temperature { value: c, scale: Scale::Celsius } }
+
+    /// The reading `f` degrees Fahrenheit.
+    ///
+    /// ```nabi
+    /// use units::Temperature;
+    ///
+    /// assert(Temperature::from_fahrenheit(-40.0).celsius() == -40.0);
+    /// ```
+    pub const fn from_fahrenheit(f: f64) -> Temperature { Temperature { value: f, scale: Scale::Fahrenheit } }
+
+    /// The reading `r` degrees Rankine.
+    ///
+    /// ```nabi
+    /// use units::Temperature;
+    ///
+    /// assert(Temperature::from_rankine(491.67).celsius() == 0.0);
+    /// ```
+    pub const fn from_rankine(r: f64) -> Temperature { Temperature { value: r, scale: Scale::Rankine } }
+
+    /// The reading `v` on `scale`.
+    ///
+    /// ```nabi
+    /// use units::Temperature;
+    /// use units::temperature::Scale;
+    ///
+    /// assert(Temperature::on(Scale::Celsius, 25.0) == 25degC);
+    /// ```
+    pub const fn on(scale: Scale, v: f64) -> Temperature { Temperature { value: v, scale: scale } }
+
+    /// The reading for an absolute thermodynamic temperature.
+    ///
+    /// ```nabi
+    /// use units::Temperature;
+    ///
+    /// assert(Temperature::from_absolute(300K).kelvin() == 300.0);
+    /// ```
+    pub const fn from_absolute(t: ThermodynamicTemperature) -> Temperature { Temperature::from_kelvin(t.value) }
+
+    /// In kelvin.
+    ///
+    /// ```nabi
+    /// assert(0degC.kelvin() == 273.15);
+    /// ```
+    pub const fn kelvin(self) -> f64 { convert(self.value, self.scale, Scale::Kelvin) }
+
+    /// In degrees Celsius.
+    ///
+    /// ```nabi
+    /// assert(32degF.celsius() == 0.0);
+    /// ```
+    pub const fn celsius(self) -> f64 { convert(self.value, self.scale, Scale::Celsius) }
+
+    /// In degrees Fahrenheit.
+    ///
+    /// ```nabi
+    /// assert(100degC.fahrenheit() == 212.0);
+    /// ```
+    pub const fn fahrenheit(self) -> f64 { convert(self.value, self.scale, Scale::Fahrenheit) }
+
+    /// In degrees Rankine.
+    ///
+    /// ```nabi
+    /// assert(0degF.rankine() == 459.67);
+    /// ```
+    pub const fn rankine(self) -> f64 { convert(self.value, self.scale, Scale::Rankine) }
+
+    /// The value on `scale`.
+    ///
+    /// ```nabi
+    /// use units::temperature::Scale;
+    ///
+    /// assert(20degC.on_scale(Scale::Fahrenheit) == 68.0);
+    /// ```
+    pub const fn on_scale(self, scale: Scale) -> f64 { convert(self.value, self.scale, scale) }
+
+    /// The scale the reading was made on.
+    ///
+    /// ```nabi
+    /// use units::temperature::Scale;
+    ///
+    /// assert(20degC.scale() == Scale::Celsius);
+    /// ```
+    pub const fn scale(self) -> Scale { self.scale }
+
+    /// The thermodynamic temperature, a kelvin `Quantity` for formulas
+    /// (`k_B * T`).
+    ///
+    /// ```nabi
+    /// assert(25degC.absolute() == 298.15K);
+    /// ```
+    pub const fn absolute(self) -> ThermodynamicTemperature { Quantity { value: self.kelvin() } }
+
+    /// The reading on `scale`, for printing: `20degC.to(degF)` prints
+    /// `68 °F`.
+    ///
+    /// ```nabi
+    /// use units::symbols::degF;
+    ///
+    /// assert(20degC.to(degF).value == 68.0);
+    /// ```
+    pub fn to(self, scale: Scale) -> Measure { Measure { value: self.on_scale(scale), unit: scale.unit() } }
+}
+
+/// On its own scale: `20 °C`, `300 K`.
+impl Display for Temperature {
+    fn fmt(self, ref f: Formatter) throws (FmtError) {
+        try Display::fmt(self.value, ref f);
+        try f.write_str(" ");
+        try f.write_str(self.scale.symbol());
+    }
+}
+
+/// Equal absolute temperatures, whatever the scales.
+impl PartialEq for Temperature {
+    fn eq(self, rhs: Temperature) -> bool { self.on_scale(rhs.scale) == rhs.value || self.kelvin() == rhs.kelvin() }
+}
+
+impl PartialOrd for Temperature {
+    fn lt(self, rhs: Temperature) -> bool { self.kelvin() < rhs.kelvin() }
+    fn gt(self, rhs: Temperature) -> bool { self.kelvin() > rhs.kelvin() }
+    fn le(self, rhs: Temperature) -> bool { self.kelvin() <= rhs.kelvin() }
+    fn ge(self, rhs: Temperature) -> bool { self.kelvin() >= rhs.kelvin() }
+}
+
+/// The number negated on its own scale, so `-40degC` reads as written
+/// (-40 °C, not the negation of a temperature).
+impl ops::Neg for Temperature {
+    type Output = Temperature;
+    fn neg(self) -> Temperature { Temperature { value: -self.value, scale: self.scale } }
+}
+
+/// Reading minus reading: the difference, in kelvin (exact for two
+/// readings on one scale).
+impl ops::Sub for Temperature {
+    type Output = ThermodynamicTemperature;
+    fn sub(self, rhs: Temperature) -> ThermodynamicTemperature {
+        Quantity { value: (self.value - rhs.on_scale(self.scale)) * self.scale.step() }
+    }
+}
+
+/// Reading plus a difference, on the reading's scale.
+impl ops::Add<Quantity<f64, 0, 0, 0, 0, 1, 0, 0>> for Temperature {
+    type Output = Temperature;
+    fn add(self, rhs: ThermodynamicTemperature) -> Temperature {
+        Temperature { value: self.value + rhs.value / self.scale.step(), scale: self.scale }
+    }
+}
+
+/// Reading minus a difference, on the reading's scale.
+impl ops::Sub<Quantity<f64, 0, 0, 0, 0, 1, 0, 0>> for Temperature {
+    type Output = Temperature;
+    fn sub(self, rhs: ThermodynamicTemperature) -> Temperature {
+        Temperature { value: self.value - rhs.value / self.scale.step(), scale: self.scale }
+    }
+}

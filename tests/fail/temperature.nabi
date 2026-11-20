@@ -1,0 +1,5 @@
+// expect: the right operand of `+` expects
+// Two temperature readings do not add; a reading plus an interval does.
+fn main() {
+    println(20degC + 10degC);
+}

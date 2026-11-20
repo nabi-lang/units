@@ -1,0 +1,17 @@
+Package {
+    name: "units",
+    version: "0.1.0",
+    nabi_version: "0.1.0",
+    toolchain: "0.1",
+    description: "Physical quantities with units: dimensions checked at compile time, SI and common units, parsing, conversion, CODATA constants",
+    license: "MIT OR Apache-2.0",
+    repository: "https://github.com/nabi-lang/units",
+    keywords: ["units", "quantities", "dimensions", "si", "physics"],
+    categories: ["science", "mathematics"],
+    deps: {},
+    features: {
+        "default": ["literals", "ops"],
+        "literals": [],
+        "ops": [],
+    },
+}

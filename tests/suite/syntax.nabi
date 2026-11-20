@@ -1,0 +1,60 @@
+// Literals and operators read as documented, with the precedence the
+// docs give.
+
+use pkg::Measure;
+use pkg::symbols::{ft, h, km, m, mi, s, degF, kelvin};
+use pkg::tests::suite::{expect, rel};
+
+#[test]
+fn literals() {
+    expect(3km.value == 3000.0 && 5cm.value == 0.05 && 2.5mm.value == 0.0025, "lengths");
+    expect(1μm.value == 1e-6 && 1µm.value == 1e-6 && 1um.value == 1e-6, "micro spellings");
+    expect(10ms.value == 0.01 && 20μs.value == 2e-5 && 3min.value == 180.0 && 2h.value == 7200.0, "times");
+    expect(2m².value == 2.0 && 3cm³.value == 3e-6 && 1L == 1000cm³, "areas and volumes");
+    expect(1kg == 1000g && 1t == 1000kg && 1oz.value == 0.028349523125, "masses");
+    expect(5kN.value == 5000.0 && 1kWh == 3.6MJ && 1kcal == 4184J, "force and energy");
+    expect(1bar == 100kPa && 1atm == 101325Pa && 1hPa == 100Pa, "pressure");
+    expect(2bar == 2.0bar && 2Btu == 2.0Btu && 3ohm == 3Ω && 2Bq == 2.0Bq, "b, o, x after an integer");
+    expect(5kΩ.value == 5000.0 && 5kohm == 5kΩ && 2μF.value == 2e-6 && 1.0ohm == 1Ω, "electric");
+    expect(3MeV.value == 3.0 * 1.602176634e-13, "electronvolts");
+    expect(1kn == 1852m / 3600s && 36kph == 10m / 1s, "speeds");
+    expect(rel_ok(180deg.value, f64::PI), "degrees");
+    expect(20degC.fahrenheit() == 68.0 && 212degF.celsius() == 100.0, "temperatures");
+    expect(5percent.value == 0.05, "percent");
+    // Postfix after a literal.
+    expect(3km.value_in(mi) > 1.86, "method on a literal");
+    expect(-2m == 0m - 2m, "negative literal");
+}
+
+fn rel_ok(a: f64, b: f64) -> bool { (a - b).abs() <= 1e-15 * b.abs() }
+
+#[test]
+fn convert_operator() {
+    let d = 5km → mi;
+    rel(d.value, 3.1068559611866697, 1e-15, "→");
+    expect(d.unit.symbol == "mi", "unit of →");
+    // `→` binds like `|`: looser than `+`, tighter than `==`.
+    expect((1km + 500m → m).value == 1500.0, "sum then convert");
+    expect((2km * 3.0 → km).value == 6.0, "product then convert");
+    expect((1mi → ft).value == 5280.0, "mile in feet");
+    rel((100km / 1h → m / s).value, 27.77777777777778, 1e-15, "speed");
+    expect((20degC → degF).value == 68.0 && (0degC → kelvin).value == 273.15, "temperatures");
+    let m = try! Measure::parse("1 mi");
+    expect((try! (m → try! pkg::DynUnit::parse("ft")).get()).value == 5280.0, "measure → dyn unit");
+    expect((m → try! pkg::DynUnit::parse("s")).is_err(), "measure mismatch is an error value");
+    expect(f"{1h → s}" == "3600 s", "prints");
+}
+
+#[test]
+fn degree_and_root_operators() {
+    rel((90°).value, f64::PI / 2.0, 1e-16, "90°");
+    expect((90°).sin() == 1.0, "sin 90°");
+    rel((-30°).value, -f64::PI / 6.0, 1e-16, "prefix minus binds looser than °");
+    rel((45.0°).tan(), 1.0, 1e-15, "float degrees");
+    let a = 30.0;
+    rel((a°).value, f64::PI / 6.0, 1e-16, "a variable");
+    expect(√(16m²) == 4m && √(9m² / 1s / 1s) == 3m / 1s, "√");
+    expect(√(4m²) + 1m == 3m, "√ binds tighter than +");
+    expect(2m.squared() == 4m² && 2s.inv() == 0.5Hz, "named powers");
+    expect(h.symbol() == "h" && s.symbol() == "s" && m.symbol() == "m" && ft.symbol() == "ft" && km.symbol() == "km", "symbols");
+}

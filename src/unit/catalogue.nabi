@@ -1,0 +1,242 @@
+//! The unit catalogue: SI base and derived units, units accepted with
+//! the SI, and common other units with their NIST SP 811 factors
+//! (exact where the definition is exact). Parsing and the error
+//! suggestions read it.
+
+use pkg::Dim;
+
+/// One unit of the catalogue.
+///
+/// ```nabi
+/// let ft = units::unit::catalogue::find("ft") ?? panic("ft");
+/// assert(ft.scale == 0.3048 && ft.name == "foot");
+/// ```
+#[derive(Clone, PartialEq, Debug)]
+pub struct Entry {
+    /// The symbol (`"ft"`).
+    pub symbol: str;
+    /// The singular name (`"foot"`).
+    pub name: str;
+    /// The plural name (`"feet"`).
+    pub plural: str;
+    /// One of the unit in coherent SI units.
+    pub scale: f64;
+    /// The SI value of zero of the unit (temperature scales only).
+    pub offset: f64;
+    /// The dimension.
+    pub dim: Dim;
+    /// Whether SI prefixes apply (`km`, `kilometre`).
+    pub prefixes: bool;
+}
+
+const ENTRIES: [Entry; 83] = [
+    Entry { symbol: "m", name: "metre", plural: "metres", scale: 1.0, offset: 0.0, dim: Dim::of([1, 0, 0, 0, 0, 0, 0]), prefixes: true },
+    Entry { symbol: "g", name: "gram", plural: "grams", scale: 1e-3, offset: 0.0, dim: Dim::of([0, 1, 0, 0, 0, 0, 0]), prefixes: true },
+    Entry { symbol: "s", name: "second", plural: "seconds", scale: 1.0, offset: 0.0, dim: Dim::of([0, 0, 1, 0, 0, 0, 0]), prefixes: true },
+    Entry { symbol: "A", name: "ampere", plural: "amperes", scale: 1.0, offset: 0.0, dim: Dim::of([0, 0, 0, 1, 0, 0, 0]), prefixes: true },
+    Entry { symbol: "K", name: "kelvin", plural: "kelvins", scale: 1.0, offset: 0.0, dim: Dim::of([0, 0, 0, 0, 1, 0, 0]), prefixes: true },
+    Entry { symbol: "mol", name: "mole", plural: "moles", scale: 1.0, offset: 0.0, dim: Dim::of([0, 0, 0, 0, 0, 1, 0]), prefixes: true },
+    Entry { symbol: "cd", name: "candela", plural: "candelas", scale: 1.0, offset: 0.0, dim: Dim::of([0, 0, 0, 0, 0, 0, 1]), prefixes: true },
+    Entry { symbol: "rad", name: "radian", plural: "radians", scale: 1.0, offset: 0.0, dim: Dim::of([0, 0, 0, 0, 0, 0, 0]), prefixes: true },
+    Entry { symbol: "sr", name: "steradian", plural: "steradians", scale: 1.0, offset: 0.0, dim: Dim::of([0, 0, 0, 0, 0, 0, 0]), prefixes: false },
+    Entry { symbol: "Hz", name: "hertz", plural: "hertz", scale: 1.0, offset: 0.0, dim: Dim::of([0, 0, -1, 0, 0, 0, 0]), prefixes: true },
+    Entry { symbol: "N", name: "newton", plural: "newtons", scale: 1.0, offset: 0.0, dim: Dim::of([1, 1, -2, 0, 0, 0, 0]), prefixes: true },
+    Entry { symbol: "Pa", name: "pascal", plural: "pascals", scale: 1.0, offset: 0.0, dim: Dim::of([-1, 1, -2, 0, 0, 0, 0]), prefixes: true },
+    Entry { symbol: "J", name: "joule", plural: "joules", scale: 1.0, offset: 0.0, dim: Dim::of([2, 1, -2, 0, 0, 0, 0]), prefixes: true },
+    Entry { symbol: "W", name: "watt", plural: "watts", scale: 1.0, offset: 0.0, dim: Dim::of([2, 1, -3, 0, 0, 0, 0]), prefixes: true },
+    Entry { symbol: "C", name: "coulomb", plural: "coulombs", scale: 1.0, offset: 0.0, dim: Dim::of([0, 0, 1, 1, 0, 0, 0]), prefixes: true },
+    Entry { symbol: "V", name: "volt", plural: "volts", scale: 1.0, offset: 0.0, dim: Dim::of([2, 1, -3, -1, 0, 0, 0]), prefixes: true },
+    Entry { symbol: "F", name: "farad", plural: "farads", scale: 1.0, offset: 0.0, dim: Dim::of([-2, -1, 4, 2, 0, 0, 0]), prefixes: true },
+    Entry { symbol: "Ω", name: "ohm", plural: "ohms", scale: 1.0, offset: 0.0, dim: Dim::of([2, 1, -3, -2, 0, 0, 0]), prefixes: true },
+    Entry { symbol: "S", name: "siemens", plural: "siemens", scale: 1.0, offset: 0.0, dim: Dim::of([-2, -1, 3, 2, 0, 0, 0]), prefixes: true },
+    Entry { symbol: "Wb", name: "weber", plural: "webers", scale: 1.0, offset: 0.0, dim: Dim::of([2, 1, -2, -1, 0, 0, 0]), prefixes: true },
+    Entry { symbol: "T", name: "tesla", plural: "teslas", scale: 1.0, offset: 0.0, dim: Dim::of([0, 1, -2, -1, 0, 0, 0]), prefixes: true },
+    Entry { symbol: "H", name: "henry", plural: "henries", scale: 1.0, offset: 0.0, dim: Dim::of([2, 1, -2, -2, 0, 0, 0]), prefixes: true },
+    Entry { symbol: "lm", name: "lumen", plural: "lumens", scale: 1.0, offset: 0.0, dim: Dim::of([0, 0, 0, 0, 0, 0, 1]), prefixes: true },
+    Entry { symbol: "lx", name: "lux", plural: "lux", scale: 1.0, offset: 0.0, dim: Dim::of([-2, 0, 0, 0, 0, 0, 1]), prefixes: true },
+    Entry { symbol: "Bq", name: "becquerel", plural: "becquerels", scale: 1.0, offset: 0.0, dim: Dim::of([0, 0, -1, 0, 0, 0, 0]), prefixes: true },
+    Entry { symbol: "Gy", name: "gray", plural: "grays", scale: 1.0, offset: 0.0, dim: Dim::of([2, 0, -2, 0, 0, 0, 0]), prefixes: true },
+    Entry { symbol: "Sv", name: "sievert", plural: "sieverts", scale: 1.0, offset: 0.0, dim: Dim::of([2, 0, -2, 0, 0, 0, 0]), prefixes: true },
+    Entry { symbol: "kat", name: "katal", plural: "katals", scale: 1.0, offset: 0.0, dim: Dim::of([0, 0, -1, 0, 0, 1, 0]), prefixes: true },
+    Entry { symbol: "degC", name: "degree Celsius", plural: "degrees Celsius", scale: 1.0, offset: 273.15, dim: Dim::of([0, 0, 0, 0, 1, 0, 0]), prefixes: false },
+    Entry { symbol: "min", name: "minute", plural: "minutes", scale: 60.0, offset: 0.0, dim: Dim::of([0, 0, 1, 0, 0, 0, 0]), prefixes: false },
+    Entry { symbol: "h", name: "hour", plural: "hours", scale: 3600.0, offset: 0.0, dim: Dim::of([0, 0, 1, 0, 0, 0, 0]), prefixes: false },
+    Entry { symbol: "d", name: "day", plural: "days", scale: 86400.0, offset: 0.0, dim: Dim::of([0, 0, 1, 0, 0, 0, 0]), prefixes: false },
+    Entry { symbol: "wk", name: "week", plural: "weeks", scale: 604800.0, offset: 0.0, dim: Dim::of([0, 0, 1, 0, 0, 0, 0]), prefixes: false },
+    Entry { symbol: "yr", name: "Julian year", plural: "Julian years", scale: 31557600.0, offset: 0.0, dim: Dim::of([0, 0, 1, 0, 0, 0, 0]), prefixes: false },
+    Entry { symbol: "deg", name: "degree", plural: "degrees", scale: f64::PI / 180.0, offset: 0.0, dim: Dim::of([0, 0, 0, 0, 0, 0, 0]), prefixes: false },
+    Entry { symbol: "arcmin", name: "arcminute", plural: "arcminutes", scale: f64::PI / 10800.0, offset: 0.0, dim: Dim::of([0, 0, 0, 0, 0, 0, 0]), prefixes: false },
+    Entry { symbol: "arcsec", name: "arcsecond", plural: "arcseconds", scale: f64::PI / 648000.0, offset: 0.0, dim: Dim::of([0, 0, 0, 0, 0, 0, 0]), prefixes: false },
+    Entry { symbol: "turn", name: "turn", plural: "turns", scale: 2.0 * f64::PI, offset: 0.0, dim: Dim::of([0, 0, 0, 0, 0, 0, 0]), prefixes: false },
+    Entry { symbol: "ha", name: "hectare", plural: "hectares", scale: 1e4, offset: 0.0, dim: Dim::of([2, 0, 0, 0, 0, 0, 0]), prefixes: false },
+    Entry { symbol: "L", name: "litre", plural: "litres", scale: 1e-3, offset: 0.0, dim: Dim::of([3, 0, 0, 0, 0, 0, 0]), prefixes: true },
+    Entry { symbol: "t", name: "tonne", plural: "tonnes", scale: 1e3, offset: 0.0, dim: Dim::of([0, 1, 0, 0, 0, 0, 0]), prefixes: true },
+    Entry { symbol: "Da", name: "dalton", plural: "daltons", scale: 1.66053906892e-27, offset: 0.0, dim: Dim::of([0, 1, 0, 0, 0, 0, 0]), prefixes: true },
+    Entry { symbol: "eV", name: "electronvolt", plural: "electronvolts", scale: 1.602176634e-19, offset: 0.0, dim: Dim::of([2, 1, -2, 0, 0, 0, 0]), prefixes: true },
+    Entry { symbol: "au", name: "astronomical unit", plural: "astronomical units", scale: 149597870700.0, offset: 0.0, dim: Dim::of([1, 0, 0, 0, 0, 0, 0]), prefixes: false },
+    Entry { symbol: "Å", name: "angstrom", plural: "angstroms", scale: 1e-10, offset: 0.0, dim: Dim::of([1, 0, 0, 0, 0, 0, 0]), prefixes: false },
+    Entry { symbol: "bar", name: "bar", plural: "bars", scale: 1e5, offset: 0.0, dim: Dim::of([-1, 1, -2, 0, 0, 0, 0]), prefixes: true },
+    Entry { symbol: "atm", name: "standard atmosphere", plural: "standard atmospheres", scale: 101325.0, offset: 0.0, dim: Dim::of([-1, 1, -2, 0, 0, 0, 0]), prefixes: false },
+    Entry { symbol: "Torr", name: "torr", plural: "torrs", scale: 101325.0 / 760.0, offset: 0.0, dim: Dim::of([-1, 1, -2, 0, 0, 0, 0]), prefixes: true },
+    Entry { symbol: "mmHg", name: "millimetre of mercury", plural: "millimetres of mercury", scale: 133.322387415, offset: 0.0, dim: Dim::of([-1, 1, -2, 0, 0, 0, 0]), prefixes: false },
+    Entry { symbol: "psi", name: "pound per square inch", plural: "pounds per square inch", scale: 6894.757293168361, offset: 0.0, dim: Dim::of([-1, 1, -2, 0, 0, 0, 0]), prefixes: false },
+    Entry { symbol: "cal", name: "calorie", plural: "calories", scale: 4.184, offset: 0.0, dim: Dim::of([2, 1, -2, 0, 0, 0, 0]), prefixes: true },
+    Entry { symbol: "cal_IT", name: "IT calorie", plural: "IT calories", scale: 4.1868, offset: 0.0, dim: Dim::of([2, 1, -2, 0, 0, 0, 0]), prefixes: true },
+    Entry { symbol: "Wh", name: "watt hour", plural: "watt hours", scale: 3600.0, offset: 0.0, dim: Dim::of([2, 1, -2, 0, 0, 0, 0]), prefixes: true },
+    Entry { symbol: "Btu", name: "British thermal unit", plural: "British thermal units", scale: 1055.05585262, offset: 0.0, dim: Dim::of([2, 1, -2, 0, 0, 0, 0]), prefixes: false },
+    Entry { symbol: "erg", name: "erg", plural: "ergs", scale: 1e-7, offset: 0.0, dim: Dim::of([2, 1, -2, 0, 0, 0, 0]), prefixes: false },
+    Entry { symbol: "dyn", name: "dyne", plural: "dynes", scale: 1e-5, offset: 0.0, dim: Dim::of([1, 1, -2, 0, 0, 0, 0]), prefixes: false },
+    Entry { symbol: "lbf", name: "pound-force", plural: "pounds-force", scale: 4.4482216152605, offset: 0.0, dim: Dim::of([1, 1, -2, 0, 0, 0, 0]), prefixes: false },
+    Entry { symbol: "kgf", name: "kilogram-force", plural: "kilograms-force", scale: 9.80665, offset: 0.0, dim: Dim::of([1, 1, -2, 0, 0, 0, 0]), prefixes: false },
+    Entry { symbol: "hp", name: "horsepower", plural: "horsepower", scale: 745.6998715822702, offset: 0.0, dim: Dim::of([2, 1, -3, 0, 0, 0, 0]), prefixes: false },
+    Entry { symbol: "inch", name: "inch", plural: "inches", scale: 0.0254, offset: 0.0, dim: Dim::of([1, 0, 0, 0, 0, 0, 0]), prefixes: false },
+    Entry { symbol: "ft", name: "foot", plural: "feet", scale: 0.3048, offset: 0.0, dim: Dim::of([1, 0, 0, 0, 0, 0, 0]), prefixes: false },
+    Entry { symbol: "yd", name: "yard", plural: "yards", scale: 0.9144, offset: 0.0, dim: Dim::of([1, 0, 0, 0, 0, 0, 0]), prefixes: false },
+    Entry { symbol: "mi", name: "mile", plural: "miles", scale: 1609.344, offset: 0.0, dim: Dim::of([1, 0, 0, 0, 0, 0, 0]), prefixes: false },
+    Entry { symbol: "nmi", name: "nautical mile", plural: "nautical miles", scale: 1852.0, offset: 0.0, dim: Dim::of([1, 0, 0, 0, 0, 0, 0]), prefixes: false },
+    Entry { symbol: "ly", name: "light-year", plural: "light-years", scale: 9460730472580800.0, offset: 0.0, dim: Dim::of([1, 0, 0, 0, 0, 0, 0]), prefixes: false },
+    Entry { symbol: "pc", name: "parsec", plural: "parsecs", scale: 149597870700.0 * 648000.0 / f64::PI, offset: 0.0, dim: Dim::of([1, 0, 0, 0, 0, 0, 0]), prefixes: true },
+    Entry { symbol: "acre", name: "acre", plural: "acres", scale: 4046.8564224, offset: 0.0, dim: Dim::of([2, 0, 0, 0, 0, 0, 0]), prefixes: false },
+    Entry { symbol: "gal", name: "US gallon", plural: "US gallons", scale: 3.785411784e-3, offset: 0.0, dim: Dim::of([3, 0, 0, 0, 0, 0, 0]), prefixes: false },
+    Entry { symbol: "floz", name: "US fluid ounce", plural: "US fluid ounces", scale: 2.95735295625e-5, offset: 0.0, dim: Dim::of([3, 0, 0, 0, 0, 0, 0]), prefixes: false },
+    Entry { symbol: "lb", name: "pound", plural: "pounds", scale: 0.45359237, offset: 0.0, dim: Dim::of([0, 1, 0, 0, 0, 0, 0]), prefixes: false },
+    Entry { symbol: "oz", name: "ounce", plural: "ounces", scale: 0.028349523125, offset: 0.0, dim: Dim::of([0, 1, 0, 0, 0, 0, 0]), prefixes: false },
+    Entry { symbol: "st", name: "stone", plural: "stones", scale: 6.35029318, offset: 0.0, dim: Dim::of([0, 1, 0, 0, 0, 0, 0]), prefixes: false },
+    Entry { symbol: "kn", name: "knot", plural: "knots", scale: 1852.0 / 3600.0, offset: 0.0, dim: Dim::of([1, 0, -1, 0, 0, 0, 0]), prefixes: false },
+    Entry { symbol: "mph", name: "mile per hour", plural: "miles per hour", scale: 0.44704, offset: 0.0, dim: Dim::of([1, 0, -1, 0, 0, 0, 0]), prefixes: false },
+    Entry { symbol: "kph", name: "kilometre per hour", plural: "kilometres per hour", scale: 1.0 / 3.6, offset: 0.0, dim: Dim::of([1, 0, -1, 0, 0, 0, 0]), prefixes: false },
+    Entry { symbol: "gn", name: "standard gravity", plural: "standard gravities", scale: 9.80665, offset: 0.0, dim: Dim::of([1, 0, -2, 0, 0, 0, 0]), prefixes: false },
+    Entry { symbol: "rpm", name: "revolution per minute", plural: "revolutions per minute", scale: f64::PI / 30.0, offset: 0.0, dim: Dim::of([0, 0, -1, 0, 0, 0, 0]), prefixes: false },
+    Entry { symbol: "degF", name: "degree Fahrenheit", plural: "degrees Fahrenheit", scale: 5.0 / 9.0, offset: 459.67 * 5.0 / 9.0, dim: Dim::of([0, 0, 0, 0, 1, 0, 0]), prefixes: false },
+    Entry { symbol: "degR", name: "degree Rankine", plural: "degrees Rankine", scale: 5.0 / 9.0, offset: 0.0, dim: Dim::of([0, 0, 0, 0, 1, 0, 0]), prefixes: false },
+    Entry { symbol: "M", name: "molar", plural: "molar", scale: 1e3, offset: 0.0, dim: Dim::of([-3, 0, 0, 0, 0, 1, 0]), prefixes: true },
+    Entry { symbol: "%", name: "percent", plural: "percent", scale: 0.01, offset: 0.0, dim: Dim::of([0, 0, 0, 0, 0, 0, 0]), prefixes: false },
+    Entry { symbol: "ppm", name: "part per million", plural: "parts per million", scale: 1e-6, offset: 0.0, dim: Dim::of([0, 0, 0, 0, 0, 0, 0]), prefixes: false },
+    Entry { symbol: "gauss", name: "gauss", plural: "gauss", scale: 1e-4, offset: 0.0, dim: Dim::of([0, 1, -2, -1, 0, 0, 0]), prefixes: false },
+];
+
+const ALIASES: [(str, str); 25] = [
+    ("meter", "m"),
+    ("meters", "m"),
+    ("liter", "L"),
+    ("liters", "L"),
+    ("l", "L"),
+    ("°C", "degC"),
+    ("℃", "degC"),
+    ("°F", "degF"),
+    ("℉", "degF"),
+    ("°R", "degR"),
+    ("°", "deg"),
+    ("ohm", "Ω"),
+    ("Ω", "Ω"),
+    ("in", "inch"),
+    ("feet", "ft"),
+    ("foot", "ft"),
+    ("hr", "h"),
+    ("sec", "s"),
+    ("kt", "kn"),
+    ("u", "Da"),
+    ("Btu_IT", "Btu"),
+    ("BTU", "Btu"),
+    ("angstrom", "Å"),
+    ("tonne", "t"),
+    ("lbs", "lb"),
+];
+
+/// Every unit of the catalogue, without prefixed forms.
+///
+/// ```nabi
+/// let all = units::unit::catalogue::entries();
+/// assert(all.iter().any(|e: units::unit::catalogue::Entry| e.symbol == "psi"));
+/// ```
+pub fn entries() -> List<Entry> {
+    let out: List<Entry> = List::with_capacity(ENTRIES.len());
+    for e in ENTRIES { out.push(e); }
+    out
+}
+
+/// The catalogue unit written `text`: its symbol (`"ft"`), its name or
+/// plural (`"foot"`, `"feet"`, any case), or a common other spelling
+/// (`"meter"`, `"°C"`, `"in"`). No prefixes; `DynUnit::parse` adds them.
+///
+/// ```nabi
+/// use units::unit::catalogue::find;
+///
+/// assert((find("Feet") ?? panic("feet")).symbol == "ft");
+/// assert((find("°C") ?? panic("degC")).offset == 273.15);
+/// assert((find("Degrees Fahrenheit") ?? panic("degF")).symbol == "degF");
+/// assert(find("km") == none);
+/// ```
+pub fn find(text: str) -> Entry | none {
+    if let e: Entry = find_symbol(text) { return e; }
+    find_name(text)
+}
+
+// A symbol or another spelling of one, case as written.
+pub(pkg) fn find_symbol(text: str) -> Entry | none {
+    for e in ENTRIES {
+        if e.symbol == text { return e; }
+    }
+    for (a, sym) in ALIASES {
+        if a == text { return find_symbol(sym); }
+    }
+    none
+}
+
+// A name or plural in any case. The names are lower case but for the
+// proper nouns of a few with a space (`degree Celsius`, `US gallon`),
+// so only those take the slow comparison.
+pub(pkg) fn find_name(text: str) -> Entry | none {
+    for e in ENTRIES {
+        if e.name == text || e.plural == text { return e; }
+    }
+    let low = text.to_lowercase();
+    if low != text {
+        for e in ENTRIES {
+            if e.name == low || e.plural == low { return e; }
+        }
+        for (a, sym) in ALIASES {
+            if a == low { return find_symbol(sym); }
+        }
+    }
+    if low.contains(" ") {
+        for e in ENTRIES {
+            if e.name.to_lowercase() == low || e.plural.to_lowercase() == low { return e; }
+        }
+    }
+    none
+}
+
+// The symbol closest to `text` by edit distance, or "" when nothing is
+// within a third of its length (at least one edit).
+pub(pkg) fn suggest(text: str) -> str {
+    let best = "";
+    let best_d = (text.char_count() / 3).max(1) + 1;
+    for e in ENTRIES {
+        for cand in [e.symbol, e.name] {
+            let d = distance(text, cand);
+            if d < best_d {
+                best_d = d;
+                best = e.symbol;
+            }
+        }
+    }
+    best
+}
+
+// Levenshtein distance over chars.
+fn distance(a: str, b: str) -> usize {
+    let x: List<char> = a.chars().collect();
+    let y: List<char> = b.chars().collect();
+    let prev: List<usize> = List::from_fn(y.len() + 1, |j| j);
+    for i in 0..x.len() {
+        let cur: List<usize> = List::with_capacity(y.len() + 1);
+        cur.push(i + 1);
+        for j in 0..y.len() {
+            let sub = prev[j] + if x[i] == y[j] { 0 } else { 1 };
+            cur.push(sub.min(prev[j + 1] + 1).min(cur[j] + 1));
+        }
+        prev = cur;
+    }
+    prev[y.len()]
+}

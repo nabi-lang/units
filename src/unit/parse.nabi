@@ -1,0 +1,208 @@
+//! Unit expressions: `kg*m/s^2`, `km/h`, `J/(mol·K)`, `m s-1`, `µm`.
+//!
+//!   product  = power { ("*" | "·" | "⋅" | " " | "/") power }
+//!   power    = atom [ ("^" | "**") int | superscripts | int ]
+//!   atom     = "(" product ")" | "1" | word
+//!
+//! `/` divides by the next power only, so `J/kg/K` is `J/(kg·K)`.
+
+use pkg::unit::catalogue;
+use pkg::unit::prefix;
+use pkg::{DynUnit, UnitError};
+
+struct Cursor {
+    text: str;
+    cs: List<(usize, char)>;
+    i: usize;
+}
+
+impl Cursor {
+    fn at(self) -> usize { if self.i < self.cs.len() { self.cs[self.i].0 } else { self.text.len() } }
+    fn peek(self) -> char | none { if self.i < self.cs.len() { self.cs[self.i].1 } else { none } }
+    fn done(self) -> bool { self.i >= self.cs.len() }
+}
+
+const SUPER_DIGITS: str = "⁰¹²³⁴⁵⁶⁷⁸⁹";
+
+fn super_digit(c: char) -> u32 | none {
+    let k = 0u32;
+    for d in SUPER_DIGITS.chars() {
+        if d == c { return k; }
+        k += 1u32;
+    }
+    none
+}
+
+fn is_word_char(c: char) -> bool {
+    c.is_alphabetic() || c == '_' || c == '°' || c == '%' || c == 'µ' || c == '\u{2126}' || c == '\u{2103}' || c == '\u{2109}'
+}
+
+fn skip_spaces(ref c: Cursor) {
+    while let ch: char = c.peek() {
+        if !ch.is_whitespace() { break; }
+        c.i += 1;
+    }
+}
+
+/// The unit `text` describes.
+pub(pkg) fn unit(text: str) throws (UnitError) -> DynUnit {
+    // A name of several words (`nautical mile`, `pound-force`) as a whole.
+    let t = text.trim();
+    if t.contains(" ") || t.contains("-") {
+        if let e: catalogue::Entry = catalogue::find_name(t) {
+            return DynUnit { symbol: e.symbol, scale: e.scale, offset: e.offset, dim: e.dim };
+        }
+    }
+    let c = Cursor { text: text, cs: text.char_indices().collect(), i: 0 };
+    skip_spaces(ref c);
+    if c.done() { throw UnitError::syntax(text, 0, "empty; write a unit such as `m`, `km/h` or `kg*m/s^2` (`1` for none)"); }
+    let u = try product(ref c);
+    skip_spaces(ref c);
+    if !c.done() {
+        throw UnitError::syntax(text, c.at(), f"unexpected `{c.peek() ?? ' '}`; join units with `*`, `/` or a space");
+    }
+    u
+}
+
+fn product(ref c: Cursor) throws (UnitError) -> DynUnit {
+    let u = try power(ref c);
+    loop {
+        skip_spaces(ref c);
+        let ch = match c.peek() {
+            ch: char => ch,
+            none => break,
+        };
+        if ch == '*' || ch == '·' || ch == '⋅' {
+            c.i += 1;
+            if c.peek() == '*' { throw UnitError::syntax(c.text, c.at(), "`**` must follow a unit, as in `s**2`"); }
+            skip_spaces(ref c);
+            u = u * try power(ref c);
+        } else if ch == '/' {
+            c.i += 1;
+            skip_spaces(ref c);
+            u = u / try power(ref c);
+        } else if ch == '(' || is_word_char(ch) {
+            u = u * try power(ref c);
+        } else {
+            break;
+        }
+    }
+    u
+}
+
+fn power(ref c: Cursor) throws (UnitError) -> DynUnit {
+    let base = try atom(ref c);
+    let n = try exponent(ref c);
+    match n {
+        k: i32 => base ** k,
+        none => base,
+    }
+}
+
+// `^2`, `**-1`, `²`, `⁻¹`, or digits glued to the unit (`m2`, `s-1`).
+fn exponent(ref c: Cursor) throws (UnitError) -> i32 | none {
+    let start = c.i;
+    let ch = match c.peek() {
+        ch: char => ch,
+        none => return none,
+    };
+    if ch == '^' || (ch == '*' && c.i + 1 < c.cs.len() && c.cs[c.i + 1].1 == '*') {
+        c.i += if ch == '^' { 1 } else { 2 };
+        skip_spaces(ref c);
+        return try integer(ref c, true);
+    }
+    if ch == '⁻' || super_digit(ch) != none {
+        let neg = ch == '⁻';
+        if neg { c.i += 1; }
+        let v = 0;
+        let any = false;
+        while let d: char = c.peek() {
+            match super_digit(d) {
+                k: u32 => {
+                    v = v * 10 + (k as i32);
+                    any = true;
+                    c.i += 1;
+                }
+                none => break,
+            }
+        }
+        if !any { throw UnitError::syntax(c.text, c.at(), "`⁻` needs superscript digits after it, as in `s⁻¹`"); }
+        return if neg { -v } else { v };
+    }
+    if ch.is_ascii_digit() || (ch == '-' && c.i + 1 < c.cs.len() && c.cs[c.i + 1].1.is_ascii_digit()) {
+        c.i = start;
+        return try integer(ref c, false);
+    }
+    none
+}
+
+fn integer(ref c: Cursor, required: bool) throws (UnitError) -> i32 | none {
+    let neg = false;
+    if c.peek() == '-' {
+        neg = true;
+        c.i += 1;
+    } else if c.peek() == '+' {
+        c.i += 1;
+    }
+    let v = 0;
+    let any = false;
+    while let d: char = c.peek() {
+        if !d.is_ascii_digit() { break; }
+        v = v * 10 + ((d as u32 - '0' as u32) as i32);
+        if v > 1000 { throw UnitError::syntax(c.text, c.at(), "exponent too large"); }
+        any = true;
+        c.i += 1;
+    }
+    if !any {
+        if required { throw UnitError::syntax(c.text, c.at(), "a power needs an integer, as in `s^2` or `m^-1`"); }
+        return none;
+    }
+    if neg { -v } else { v }
+}
+
+fn atom(ref c: Cursor) throws (UnitError) -> DynUnit {
+    let at = c.at();
+    let ch = match c.peek() {
+        ch: char => ch,
+        none => throw UnitError::syntax(c.text, at, "a unit is missing at the end"),
+    };
+    if ch == '(' {
+        c.i += 1;
+        skip_spaces(ref c);
+        let u = try product(ref c);
+        skip_spaces(ref c);
+        if c.peek() != ')' { throw UnitError::syntax(c.text, c.at(), "`(` is not closed; add `)`"); }
+        c.i += 1;
+        return u;
+    }
+    if ch == '1' {
+        c.i += 1;
+        return DynUnit { symbol: "1", scale: 1.0, offset: 0.0, dim: pkg::Dim::NONE };
+    }
+    if !is_word_char(ch) {
+        throw UnitError::syntax(c.text, at, f"expected a unit, found `{ch}`");
+    }
+    let word = "";
+    while let w: char = c.peek() {
+        if !is_word_char(w) { break; }
+        word = word + w.to_str();
+        c.i += 1;
+    }
+    try word_unit(word)
+}
+
+// A catalogue unit, alone or behind an SI prefix.
+pub(pkg) fn word_unit(word: str) throws (UnitError) -> DynUnit {
+    if let e: catalogue::Entry = catalogue::find(word) {
+        return DynUnit { symbol: e.symbol, scale: e.scale, offset: e.offset, dim: e.dim };
+    }
+    for (p, rest, named) in prefix::split(word) {
+        let found = if named { catalogue::find_name(rest) } else { catalogue::find_symbol(rest) };
+        if let e: catalogue::Entry = found {
+            if e.prefixes {
+                return DynUnit { symbol: p.symbol + e.symbol, scale: prefix::scaled(e.scale, p.power), offset: 0.0, dim: e.dim };
+            }
+        }
+    }
+    throw UnitError::Unknown { text: word, suggestion: catalogue::suggest(word) };
+}

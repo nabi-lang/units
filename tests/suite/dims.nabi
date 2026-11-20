@@ -1,0 +1,98 @@
+// Dimension algebra, static and dynamic.
+
+use pkg::Dim;
+use pkg::kinds::{Acceleration, Energy, Force, Frequency, Length, Mass, Power, Pressure, Time, Velocity};
+use pkg::tests::suite::expect;
+use std::random::{Rng, Xoshiro256PlusPlus};
+
+fn kinetic(m: Mass, v: Velocity) -> Energy { 0.5 * m * v.squared() }
+
+fn power(f: Force, v: Velocity) -> Power { f * v }
+
+#[test]
+fn static_algebra() {
+    let d: Length = 100m;
+    let t: Time = 9.58s;
+    let v = d / t;
+    expect(v.dim() == Dim::LENGTH / Dim::TIME, "m / s");
+    let a: Acceleration = v / t;
+    expect(a.dim().exponents() == [1, 0, -2, 0, 0, 0, 0], "m / s / s");
+    let f: Force = 70kg * a;
+    expect(f.unit_symbol() == "N", "kg m / s^2 is N");
+    expect(kinetic(2kg, 3m / 1s) == 9J, "kinetic energy");
+    expect(power(10N, 2m / 1s) == 20W, "power");
+    let p: Pressure = 10N / 2m²;
+    expect(p == 5Pa, "pressure");
+    expect((1m * 1s / 1s) == 1m, "cancel");
+    expect((2m / 2m).dim().is_none(), "dimensionless ratio");
+    expect(2m.powi::<3>().dim() == Dim::LENGTH.pow(3), "powi");
+    expect(4s.inv().dim() == Dim::TIME.pow(-1), "inv");
+    expect(√(9m²) == 3m, "sqrt operator");
+    // glibc's cbrt is not correctly rounded: 27 gives 3 + 1 ulp.
+    expect(27m³.cbrt().approx_eq(3m), "cbrt");
+    expect((-3m).abs() == 3m && 2m.min(3m) == 2m && 2m.max(3m) == 3m, "abs min max");
+}
+
+#[test]
+fn comparisons() {
+    expect(1km > 999m, ">");
+    expect(1mi < 2km, "<");
+    expect(1inch <= 2.54cm && 2.54cm <= 1inch, "inch is 2.54 cm");
+    expect(1h >= 3600s && 1h == 60min, "hour");
+    expect((0.1m + 0.2m).approx_eq(0.3m), "approx");
+    expect(!(1m).approx_eq(1.001m), "not approx");
+}
+
+#[test]
+fn dynamic_algebra() {
+    let f = Dim::MASS * Dim::LENGTH / Dim::TIME.pow(2);
+    expect(f.symbol() == "N" && f.name() == "force", "force");
+    expect((f * Dim::LENGTH).symbol() == "J", "work");
+    expect((f / Dim::LENGTH.pow(2)).symbol() == "Pa", "stress");
+    expect((Dim::CURRENT * Dim::TIME).symbol() == "C", "charge");
+    expect((Dim::MASS / Dim::LENGTH.pow(3)).symbol() == "kg/m³", "density");
+    expect((Dim::MASS * Dim::LENGTH / Dim::TIME).symbol() == "N·s", "momentum");
+    expect((Dim::LENGTH / Dim::TIME.pow(2)).symbol() == "m/s²", "base wins a tie");
+    expect((f * Dim::LENGTH / Dim::TEMPERATURE).symbol() == "J/K", "entropy");
+    expect((f / Dim::TIME / Dim::TEMPERATURE).symbol() == "W/(m·K)", "conductivity");
+    expect(Dim::TIME.pow(-1).symbol() == "1/s", "rate");
+    expect(Dim::NONE.symbol() == "", "dimensionless");
+    expect(f.ascii() == "N" && Dim::LENGTH.pow(2).ascii() == "m^2", "ascii");
+    expect(f.base_symbol() == "kg·m/s²", "base form");
+    expect(f"{f}" == "L·M·T⁻²", "letters");
+    expect(Dim::LENGTH.pow(4).root(2) == Dim::LENGTH.pow(2), "root");
+    expect(Dim::LENGTH.pow(3).root(2) == none, "odd root");
+}
+
+// The static and dynamic algebras agree: random products and quotients.
+#[test]
+fn random_algebra() {
+    let g = Xoshiro256PlusPlus::seed(7);
+    for _ in 0..200 {
+        let e: [i8; 7] = [0; 7];
+        let f: [i8; 7] = [0; 7];
+        for k in 0..7 {
+            e[k] = (g.below(7u64) as i8) - 3;
+            f[k] = (g.below(7u64) as i8) - 3;
+        }
+        let a = Dim::of(e);
+        let b = Dim::of(f);
+        expect((a * b) / b == a, "a b / b");
+        expect(a * b == b * a, "commutes");
+        expect(a.pow(2).root(2) == a, "square root");
+        expect((a / a).is_none(), "a / a");
+    }
+}
+
+#[test]
+fn numbers_on_the_left() {
+    let v: Velocity = 3m / 1s;
+    expect(kinetic(2kg, v) == 9J, "0.5 * m * v^2");
+    expect(2.0 * v == v * 2.0 && 2.0 * 3s == 6s, "f64 * q");
+    let f: Length<f32> = pkg::Quantity::si(1.5f32);
+    expect((2.0f32 * f).value == 3.0f32, "f32 on the left");
+    expect(2.0 * f64::PI * 1m == 1m * 2.0 * f64::PI, "a product of numbers first");
+    let hz: Frequency = 1.0 / 4s;
+    expect(hz == 4s.inv() && 1.0 / hz == 4s, "f64 / q");
+    expect((3.0f32 / f).value == 2.0f32, "f32 / q");
+}

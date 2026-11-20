@@ -1,0 +1,107 @@
+//! The one error type of the package: what was wrong and what to write
+//! instead.
+
+use pkg::Dim;
+
+/// What went wrong with a unit or a dynamic quantity. A mismatch names
+/// both dimensions and the factor that would bridge them; a unit that
+/// is not known suggests the closest one.
+///
+/// ```nabi
+/// use units::{Measure, UnitError};
+///
+/// let v = try! Measure::parse("3 m/s");
+/// try v.to_str("s") catch e: UnitError {
+///     println(e); // cannot convert m/s (velocity, L·T⁻¹) to s (time, T): ...
+/// };
+/// ```
+#[derive(Clone, PartialEq, Debug)]
+pub enum UnitError {
+    /// Two dimensions that had to agree do not: a conversion, a sum,
+    /// a comparison. `op` says which.
+    Mismatch { op: str; from: Dim; to: Dim; },
+    /// A unit symbol or name that is not in the catalogue.
+    Unknown { text: str; suggestion: str; },
+    /// A unit expression that does not parse.
+    Syntax { text: str; at: usize; what: str; },
+    /// A number that does not parse, or one that is out of range.
+    Value { what: str; got: str; need: str; },
+}
+
+impl UnitError {
+    /// A mismatch between `from` and `to` in `op`.
+    pub(pkg) fn mismatch(op: str, from: Dim, to: Dim) -> UnitError {
+        UnitError::Mismatch { op: op, from: from, to: to }
+    }
+
+    /// A syntax error in `text` at byte `at`.
+    pub(pkg) fn syntax(text: str, at: usize, what: str) -> UnitError {
+        UnitError::Syntax { text: text, at: at, what: what }
+    }
+}
+
+// `velocity (m/s)`, or the dimension letters when it has no name.
+fn describe(d: Dim) -> str {
+    let sym = if d.is_none() { "1" } else { d.symbol() };
+    match d.name() {
+        n: str => f"{sym} ({n}, {d})",
+        none => f"{sym} ({d})",
+    }
+}
+
+// "a time (s)", "an acceleration (m/s²)", "a quantity in s²/m".
+fn quantity(d: Dim) -> str {
+    match d.name() {
+        n: str => {
+            let an = n.starts_with("a") || n.starts_with("e") || n.starts_with("i") || n.starts_with("o") || n.starts_with("u");
+            f"{if an { "an" } else { "a" }} {n} ({d.symbol()})"
+        }
+        none => f"a quantity in {d.symbol()}",
+    }
+}
+
+fn negatives(d: Dim) -> i32 {
+    let n = 0;
+    for x in d.exponents() {
+        if x < 0 { n -= x as i32; }
+    }
+    n
+}
+
+// The factor that turns `from` into `to`, as advice: a named quantity
+// first, then the one with fewer negative powers, multiplying on a tie.
+fn bridge(from: Dim, to: Dim) -> str {
+    let need = to / from;
+    let inv = from / to;
+    let (a, b) = (need.name() != none, inv.name() != none);
+    let multiply = if a != b { a } else { negatives(need) <= negatives(inv) };
+    if multiply { f"; multiply by {quantity(need)} first" } else { f"; divide by {quantity(inv)} first" }
+}
+
+impl Display for UnitError {
+    fn fmt(self, ref f: Formatter) throws (FmtError) {
+        let s = match self {
+            Mismatch { op, from, to } => {
+                let a = describe(from);
+                let b = describe(to);
+                if op == "convert" {
+                    f"cannot convert {a} to {b}: the dimensions differ{bridge(from, to)}"
+                } else {
+                    f"cannot {op} {a} and {b}: the dimensions differ; convert one side first (`x.to(..)`), or check the formula"
+                }
+            }
+            Unknown { text, suggestion } => {
+                if suggestion == "" {
+                    f"unknown unit `{text}`: write an SI symbol (`km`, `kg*m/s^2`) or a name (`kilometre`); `units::Unit::catalogue()` lists them"
+                } else {
+                    f"unknown unit `{text}`: did you mean `{suggestion}`?"
+                }
+            }
+            Syntax { text, at, what } => f"bad unit `{text}` at byte {at}: {what}",
+            Value { what, got, need } => f"{what}: got `{got}`, need {need}",
+        };
+        try f.write_str(s)
+    }
+}
+
+impl Error for UnitError {}

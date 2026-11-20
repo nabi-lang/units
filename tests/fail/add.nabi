@@ -1,0 +1,6 @@
+// expect: operator `+` cannot be applied
+// A length plus a time.
+fn main() {
+    let x = 1m + 1s;
+    println(x);
+}

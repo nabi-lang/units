@@ -1,0 +1,332 @@
+//! Dimensions as values: the exponents of the seven SI base quantities.
+//! The static `Quantity` carries the same seven numbers as const
+//! parameters; `Dim` is what parsed units, errors and printing use.
+
+/// A physical dimension: the exponent of each SI base quantity, in the
+/// order length (m), mass (kg), time (s), electric current (A),
+/// thermodynamic temperature (K), amount of substance (mol) and
+/// luminous intensity (cd). Velocity is `L T^-1`, force `M L T^-2`.
+///
+/// ```nabi
+/// use units::Dim;
+///
+/// let v = Dim::LENGTH / Dim::TIME;
+/// assert(v.symbol() == "m/s");
+/// assert((v * Dim::MASS / Dim::TIME).symbol() == "N");
+/// assert(Dim::LENGTH.pow(3).name() == "volume");
+/// ```
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Hash)]
+pub struct Dim {
+    /// Exponent of length (metre).
+    pub length: i8;
+    /// Exponent of mass (kilogram).
+    pub mass: i8;
+    /// Exponent of time (second).
+    pub time: i8;
+    /// Exponent of electric current (ampere).
+    pub current: i8;
+    /// Exponent of thermodynamic temperature (kelvin).
+    pub temperature: i8;
+    /// Exponent of amount of substance (mole).
+    pub amount: i8;
+    /// Exponent of luminous intensity (candela).
+    pub luminosity: i8;
+}
+
+// Base symbols in print order: "kg*m/s^2" is how SI texts write a newton.
+const PRINT_ORDER: [usize; 7] = [1, 0, 2, 3, 4, 5, 6];
+const BASE_SYMBOLS: [str; 7] = ["m", "kg", "s", "A", "K", "mol", "cd"];
+
+// Named coherent derived units tried when printing, in order of
+// preference: the first with the fewest factors left wins, and the
+// base form wins a tie.
+const NAMED: [(str, [i8; 7]); 12] = [
+    ("J", [2, 1, -2, 0, 0, 0, 0]),
+    ("W", [2, 1, -3, 0, 0, 0, 0]),
+    ("V", [2, 1, -3, -1, 0, 0, 0]),
+    ("N", [1, 1, -2, 0, 0, 0, 0]),
+    ("Pa", [-1, 1, -2, 0, 0, 0, 0]),
+    ("C", [0, 0, 1, 1, 0, 0, 0]),
+    ("Ω", [2, 1, -3, -2, 0, 0, 0]),
+    ("S", [-2, -1, 3, 2, 0, 0, 0]),
+    ("F", [-2, -1, 4, 2, 0, 0, 0]),
+    ("Wb", [2, 1, -2, -1, 0, 0, 0]),
+    ("T", [0, 1, -2, -1, 0, 0, 0]),
+    ("H", [2, 1, -2, -2, 0, 0, 0]),
+];
+
+// Names of common dimensions, for messages.
+const NAMES: [(str, [i8; 7]); 34] = [
+    ("dimensionless", [0, 0, 0, 0, 0, 0, 0]),
+    ("length", [1, 0, 0, 0, 0, 0, 0]),
+    ("mass", [0, 1, 0, 0, 0, 0, 0]),
+    ("time", [0, 0, 1, 0, 0, 0, 0]),
+    ("electric current", [0, 0, 0, 1, 0, 0, 0]),
+    ("temperature", [0, 0, 0, 0, 1, 0, 0]),
+    ("amount of substance", [0, 0, 0, 0, 0, 1, 0]),
+    ("luminous intensity", [0, 0, 0, 0, 0, 0, 1]),
+    ("area", [2, 0, 0, 0, 0, 0, 0]),
+    ("volume", [3, 0, 0, 0, 0, 0, 0]),
+    ("wavenumber", [-1, 0, 0, 0, 0, 0, 0]),
+    ("frequency", [0, 0, -1, 0, 0, 0, 0]),
+    ("velocity", [1, 0, -1, 0, 0, 0, 0]),
+    ("acceleration", [1, 0, -2, 0, 0, 0, 0]),
+    ("jerk", [1, 0, -3, 0, 0, 0, 0]),
+    ("momentum", [1, 1, -1, 0, 0, 0, 0]),
+    ("force", [1, 1, -2, 0, 0, 0, 0]),
+    ("energy", [2, 1, -2, 0, 0, 0, 0]),
+    ("power", [2, 1, -3, 0, 0, 0, 0]),
+    ("action", [2, 1, -1, 0, 0, 0, 0]),
+    ("pressure", [-1, 1, -2, 0, 0, 0, 0]),
+    ("density", [-3, 1, 0, 0, 0, 0, 0]),
+    ("dynamic viscosity", [-1, 1, -1, 0, 0, 0, 0]),
+    ("electric charge", [0, 0, 1, 1, 0, 0, 0]),
+    ("voltage", [2, 1, -3, -1, 0, 0, 0]),
+    ("resistance", [2, 1, -3, -2, 0, 0, 0]),
+    ("conductance", [-2, -1, 3, 2, 0, 0, 0]),
+    ("capacitance", [-2, -1, 4, 2, 0, 0, 0]),
+    ("magnetic flux", [2, 1, -2, -1, 0, 0, 0]),
+    ("magnetic flux density", [0, 1, -2, -1, 0, 0, 0]),
+    ("inductance", [2, 1, -2, -2, 0, 0, 0]),
+    ("entropy", [2, 1, -2, 0, -1, 0, 0]),
+    ("molar mass", [0, 1, 0, 0, 0, -1, 0]),
+    ("concentration", [-3, 0, 0, 0, 0, 1, 0]),
+];
+
+const SUPERSCRIPTS: [str; 10] = ["⁰", "¹", "²", "³", "⁴", "⁵", "⁶", "⁷", "⁸", "⁹"];
+
+impl Dim {
+    /// No dimension: a pure number (and angles, which SI counts as 1).
+    pub const NONE: Dim = Dim::of([0, 0, 0, 0, 0, 0, 0]);
+    /// Length, `L`.
+    pub const LENGTH: Dim = Dim::of([1, 0, 0, 0, 0, 0, 0]);
+    /// Mass, `M`.
+    pub const MASS: Dim = Dim::of([0, 1, 0, 0, 0, 0, 0]);
+    /// Time, `T`.
+    pub const TIME: Dim = Dim::of([0, 0, 1, 0, 0, 0, 0]);
+    /// Electric current, `I`.
+    pub const CURRENT: Dim = Dim::of([0, 0, 0, 1, 0, 0, 0]);
+    /// Thermodynamic temperature, `Θ`.
+    pub const TEMPERATURE: Dim = Dim::of([0, 0, 0, 0, 1, 0, 0]);
+    /// Amount of substance, `N`.
+    pub const AMOUNT: Dim = Dim::of([0, 0, 0, 0, 0, 1, 0]);
+    /// Luminous intensity, `J`.
+    pub const LUMINOSITY: Dim = Dim::of([0, 0, 0, 0, 0, 0, 1]);
+
+    /// The dimension with exponents `e`, in base-quantity order.
+    ///
+    /// ```nabi
+    /// use units::Dim;
+    ///
+    /// assert(Dim::of([1, 0, -2, 0, 0, 0, 0]).name() == "acceleration");
+    /// ```
+    pub const fn of(e: [i8; 7]) -> Dim {
+        Dim { length: e[0], mass: e[1], time: e[2], current: e[3], temperature: e[4], amount: e[5], luminosity: e[6] }
+    }
+
+    /// The seven exponents, in base-quantity order.
+    ///
+    /// ```nabi
+    /// use units::Dim;
+    ///
+    /// assert(Dim::MASS.exponents() == [0, 1, 0, 0, 0, 0, 0]);
+    /// ```
+    pub const fn exponents(self) -> [i8; 7] {
+        [self.length, self.mass, self.time, self.current, self.temperature, self.amount, self.luminosity]
+    }
+
+    /// Whether every exponent is zero.
+    ///
+    /// ```nabi
+    /// use units::Dim;
+    ///
+    /// assert((Dim::LENGTH / Dim::LENGTH).is_none());
+    /// ```
+    pub const fn is_none(self) -> bool {
+        for x in self.exponents() {
+            if x != 0 { return false; }
+        }
+        true
+    }
+
+    /// The dimension raised to the integer power `n`. Exponents beyond
+    /// the `i8` range wrap; no physical quantity comes near.
+    ///
+    /// ```nabi
+    /// use units::Dim;
+    ///
+    /// assert(Dim::TIME.pow(-1).name() == "frequency");
+    /// ```
+    pub const fn pow(self, n: i32) -> Dim {
+        let e = self.exponents();
+        let out: [i8; 7] = [0; 7];
+        for k in 0..7 { out[k] = ((e[k] as i32) * n) as i8; }
+        Dim::of(out)
+    }
+
+    /// The `n`-th root, or `none` when an exponent is not a multiple of
+    /// `n` (the square root of a length has no SI dimension).
+    ///
+    /// ```nabi
+    /// use units::Dim;
+    ///
+    /// assert(Dim::LENGTH.pow(2).root(2) == Dim::LENGTH);
+    /// assert(Dim::LENGTH.root(2) == none);
+    /// ```
+    pub const fn root(self, n: i32) -> Dim | none {
+        if n == 0 { return none; }
+        let e = self.exponents();
+        let out: [i8; 7] = [0; 7];
+        for k in 0..7 {
+            if (e[k] as i32) % n != 0 { return none; }
+            out[k] = ((e[k] as i32) / n) as i8;
+        }
+        Dim::of(out)
+    }
+
+    /// The common name of this dimension (`"velocity"`, `"energy"`), or
+    /// `none` for one without a usual name.
+    ///
+    /// ```nabi
+    /// use units::Dim;
+    ///
+    /// assert((Dim::MASS * Dim::LENGTH.pow(2) / Dim::TIME.pow(2)).name() == "energy");
+    /// assert(Dim::of([5, 0, 0, 0, 0, 0, 0]).name() == none);
+    /// ```
+    pub fn name(self) -> str | none {
+        let e = self.exponents();
+        for (n, d) in NAMES {
+            if d == e { return n; }
+        }
+        none
+    }
+
+    /// The coherent SI unit of this dimension, named derived units
+    /// first: `"N"`, `"J/K"`, `"W/(m·K)"`, `"m/s²"`; `""` when
+    /// dimensionless.
+    ///
+    /// ```nabi
+    /// use units::Dim;
+    ///
+    /// let k = Dim::MASS * Dim::LENGTH / Dim::TIME.pow(3) / Dim::TEMPERATURE;
+    /// assert(k.symbol() == "W/(m·K)");
+    /// assert((Dim::LENGTH / Dim::TIME.pow(2)).symbol() == "m/s²");
+    /// ```
+    pub fn symbol(self) -> str { self.render(false) }
+
+    /// `symbol` in plain ASCII: `"kg*m^2/s^2"` style, `"ohm"` for `Ω`.
+    /// `Unit::parse` reads it back.
+    ///
+    /// ```nabi
+    /// use units::Dim;
+    ///
+    /// assert((Dim::LENGTH / Dim::TIME.pow(2)).ascii() == "m/s^2");
+    /// ```
+    pub fn ascii(self) -> str { self.render(true) }
+
+    /// The base-unit form only, no named derived unit: `"kg·m/s²"` for
+    /// a force.
+    ///
+    /// ```nabi
+    /// use units::Dim;
+    ///
+    /// assert((Dim::MASS * Dim::LENGTH / Dim::TIME.pow(2)).base_symbol() == "kg·m/s²");
+    /// ```
+    pub fn base_symbol(self) -> str { compose("", self.exponents(), false) }
+
+    fn render(self, ascii: bool) -> str {
+        let e = self.exponents();
+        let best = factors(e);
+        let pick: str | none = none;
+        let rest = e;
+        for (sym, d) in NAMED {
+            let r: [i8; 7] = [0; 7];
+            for k in 0..7 { r[k] = e[k] - d[k]; }
+            let n = factors(r) + 1;
+            if n < best {
+                best = n;
+                pick = sym;
+                rest = r;
+            }
+        }
+        match pick {
+            s: str => compose(if ascii && s == "Ω" { "ohm" } else { s }, rest, ascii),
+            none => compose("", e, ascii),
+        }
+    }
+}
+
+// Nonzero exponents: the factors a printed unit has.
+fn factors(e: [i8; 7]) -> i32 {
+    let n = 0;
+    for x in e {
+        if x != 0 { n += 1; }
+    }
+    n
+}
+
+fn power(sym: str, p: i8, ascii: bool) -> str {
+    if p == 1 { return sym; }
+    if ascii { return f"{sym}^{p}"; }
+    let s = sym;
+    if p < 0 { s = s + "⁻"; }
+    let digits = f"{(p as i32).abs()}";
+    for c in digits.chars() {
+        s = s + SUPERSCRIPTS[(c as u32 - '0' as u32) as usize];
+    }
+    s
+}
+
+// `named` (may be empty) times the base units of `e`: positive powers
+// joined by `·`, negative ones after one `/`, grouped in parentheses
+// when more than one.
+fn compose(named: str, e: [i8; 7], ascii: bool) -> str {
+    let dot = if ascii { "*" } else { "·" };
+    let num: List<str> = [];
+    let den: List<str> = [];
+    if named != "" { num.push(named); }
+    for k in PRINT_ORDER {
+        if e[k] > 0 { num.push(power(BASE_SYMBOLS[k], e[k], ascii)); }
+        if e[k] < 0 { den.push(power(BASE_SYMBOLS[k], -e[k], ascii)); }
+    }
+    let top = if num.is_empty() { if den.is_empty() { "" } else { "1" } } else { num.join(dot) };
+    if den.is_empty() { return top; }
+    let bottom = den.join(dot);
+    if den.len() > 1 { f"{top}/({bottom})" } else { f"{top}/{bottom}" }
+}
+
+impl ops::Mul for Dim {
+    type Output = Dim;
+    fn mul(self, rhs: Dim) -> Dim {
+        let a = self.exponents();
+        let b = rhs.exponents();
+        let out: [i8; 7] = [0; 7];
+        for k in 0..7 { out[k] = a[k] + b[k]; }
+        Dim::of(out)
+    }
+}
+
+impl ops::Div for Dim {
+    type Output = Dim;
+    fn div(self, rhs: Dim) -> Dim {
+        let a = self.exponents();
+        let b = rhs.exponents();
+        let out: [i8; 7] = [0; 7];
+        for k in 0..7 { out[k] = a[k] - b[k]; }
+        Dim::of(out)
+    }
+}
+
+/// `L·T⁻¹` style: the base-quantity letters with their exponents, so a
+/// message reads `velocity (L·T⁻¹)`.
+impl Display for Dim {
+    fn fmt(self, ref f: Formatter) throws (FmtError) {
+        let letters = ["L", "M", "T", "I", "Θ", "N", "J"];
+        let e = self.exponents();
+        let parts: List<str> = [];
+        for k in 0..7 {
+            if e[k] != 0 { parts.push(power(letters[k], e[k], false)); }
+        }
+        try f.pad(if parts.is_empty() { "1" } else { parts.join("·") })
+    }
+}

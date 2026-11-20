@@ -1,0 +1,87 @@
+//! Arithmetic on 1e7 values: quantities against bare `f64`. The
+//! dimension lives in the type, so both run alike: scalar code in the
+//! same loop, a chain of broadcast operators fused into one loop.
+
+use pkg::Quantity;
+use pkg::kinds::{Length, Time, Velocity};
+use pkg::symbols::{m, s};
+use core::array::Array;
+use core::bench::Bench;
+use core::hint::black_box;
+use std::random::{Rng, Xoshiro256PlusPlus};
+
+const N: usize = 10_000_000;
+
+fn values(seed: u64, lo: f64, hi: f64) -> List<f64> {
+    let g = Xoshiro256PlusPlus::seed(seed);
+    List::from_fn(N, [ref g] |_| g.uniform(lo, hi))
+}
+
+// v = d / t + v0, whole arrays, broadcast operators.
+#[bench]
+fn array_f64(b: Bench) {
+    let d = Array::from_list(values(1, 0.0, 1e3), [N]);
+    let t = Array::from_list(values(2, 1.0, 1e2), [N]);
+    b.set_items(N as i64);
+    b.iter(|| black_box(d) ./ black_box(t) .+ 3.0);
+}
+
+#[bench]
+fn array_quantity(b: Bench) {
+    let d = m.array(Array::from_list(values(1, 0.0, 1e3), [N]));
+    let t = s.array(Array::from_list(values(2, 1.0, 1e2), [N]));
+    let v0 = 3m / 1s;
+    b.set_items(N as i64);
+    b.iter(|| black_box(d) ./ black_box(t) .+ v0);
+}
+
+// The same, one scalar at a time in a counted loop.
+#[bench]
+fn scalar_f64(b: Bench) {
+    let d = values(1, 0.0, 1e3);
+    let t = values(2, 1.0, 1e2);
+    b.set_items(N as i64);
+    b.iter(|| {
+        let (d, t) = (black_box(d), black_box(t));
+        let acc = 0.0;
+        for i in 0..N {
+            acc = acc + (d[i] / t[i] + 3.0);
+        }
+        acc
+    });
+}
+
+fn speed(d: Length, t: Time) -> Velocity { d / t }
+
+#[bench]
+fn scalar_quantity(b: Bench) {
+    let d = values(1, 0.0, 1e3);
+    let t = values(2, 1.0, 1e2);
+    b.set_items(N as i64);
+    b.iter(|| {
+        let (d, t) = (black_box(d), black_box(t));
+        let acc: Velocity = Quantity::si(0.0);
+        let v0 = 3m / 1s;
+        for i in 0..N {
+            acc = acc + (speed(Quantity::si(d[i]), Quantity::si(t[i])) + v0);
+        }
+        acc
+    });
+}
+
+// Kinetic energy 0.5 m v^2 of 1e7 bodies.
+#[bench]
+fn kinetic_f64(b: Bench) {
+    let mass = Array::from_list(values(3, 1.0, 10.0), [N]);
+    let v = Array::from_list(values(4, 0.0, 30.0), [N]);
+    b.set_items(N as i64);
+    b.iter(|| black_box(mass) .* black_box(v) .* black_box(v) .* 0.5);
+}
+
+#[bench]
+fn kinetic_quantity(b: Bench) {
+    let mass = pkg::symbols::kg.array(Array::from_list(values(3, 1.0, 10.0), [N]));
+    let v = (m / s).array(Array::from_list(values(4, 0.0, 30.0), [N]));
+    b.set_items(N as i64);
+    b.iter(|| black_box(mass) .* black_box(v) .* black_box(v) .* 0.5);
+}

@@ -1,0 +1,48 @@
+# Format, tests on Linux, macOS and Windows, publish check.
+name: CI / Test the package
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  merge_group:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  dco:
+    name: DCO
+    uses: nabi-lang/.github/.github/workflows/reusable-dco.yml@v1.0.0
+
+  package:
+    name: Package
+    uses: nabi-lang/.github/.github/workflows/reusable-package.yml@v1.0.0
+    # its tests run processes, which wasm32-wasip2 lacks
+    with:
+      wasm: false
+
+  # The one required check (rulesets/main.json): passes when every job
+  # passed or was skipped.
+  ci-gate:
+    name: CI gate
+    needs: [dco, package]
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Check the job results
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "results: $RESULTS"
+          for r in $RESULTS; do
+            case $r in
+              success | skipped) ;;
+              *)
+                echo "::error::a gate job did not pass: $r"
+                exit 1
+                ;;
+            esac
+          done

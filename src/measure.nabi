@@ -1,0 +1,282 @@
+//! The dynamic quantity: a number and a unit whose dimension is a value,
+//! for units read at run time (input files, user strings) and for
+//! powers with a run-time exponent. Sums check the dimension when they
+//! run and hand back a `Result`, as operators never throw.
+
+use pkg::temperature::Scale;
+use pkg::{Dim, DynUnit, Quantity, Temperature, UnitError};
+use core::fmt::{FormatSpec, Formatter};
+
+/// A value in a unit known at run time: `3.5 km/h`, `20 degC`.
+///
+/// `*`, `/` and `** n` always work and combine the units; `+` and `-`
+/// convert the right side to the left side's unit and give a
+/// `Result`, an error when the dimensions differ. `==` is true for
+/// equal SI values of one dimension.
+///
+/// ```nabi
+/// use units::Measure;
+///
+/// let d = try! Measure::parse("12 km");
+/// let t = try! Measure::parse("30 min");
+/// let v = d / t;
+/// assert(((try! v.to_str("km/h")).value - 24.0).abs() < 1e-12);
+/// let total = try! (d + try! Measure::parse("500 m")).get();
+/// assert(total.value == 12.5 && total.unit.symbol == "km");
+/// assert((d + t).is_err());
+/// ```
+#[derive(Clone, Debug)]
+pub struct Measure {
+    /// The number, in `unit`.
+    pub value: f64;
+    /// The unit.
+    pub unit: DynUnit;
+}
+
+impl Measure {
+    /// `value` of `unit`.
+    ///
+    /// ```nabi
+    /// use units::{DynUnit, Measure};
+    ///
+    /// let m = Measure::new(3.0, try! DynUnit::parse("ft"));
+    /// assert((m.si() - 0.9144).abs() < 1e-15);
+    /// ```
+    pub fn new(value: f64, unit: DynUnit) -> Measure { Measure { value: value, unit: unit } }
+
+    /// Parse a number and a unit, `"9.81 m/s^2"`, `"20 °C"`, `"1e-3 kg"`;
+    /// the space is optional (`"5km"`). A bare unit counts as one of it.
+    ///
+    /// ```nabi
+    /// use units::Measure;
+    ///
+    /// assert((try! Measure::parse("9.81 m/s^2")).unit.dim.name() == "acceleration");
+    /// assert((try! Measure::parse("2.5e3kg")).si() == 2500.0);
+    /// assert((try! Measure::parse("km")).si() == 1000.0);
+    /// ```
+    pub fn parse(text: str) throws (UnitError) -> Measure {
+        let t = text.trim();
+        let cut = number_end(t);
+        if cut == 0 { return Measure { value: 1.0, unit: try DynUnit::parse(t) }; }
+        let num: str = t[0:cut];
+        let v = try num.parse::<f64>() catch _ {
+            throw UnitError::Value { what: "the number of a measure", got: num, need: "a decimal number such as `3`, `-0.5` or `1.2e-3`" };
+        };
+        let rest: str = t[cut:];
+        if rest.trim() == "" { return Measure { value: v, unit: DynUnit::coherent(Dim::NONE) }; }
+        Measure { value: v, unit: try DynUnit::parse(rest) }
+    }
+
+    /// The value in coherent SI units.
+    ///
+    /// ```nabi
+    /// use units::Measure;
+    ///
+    /// assert((try! Measure::parse("2 h")).si() == 7200.0);
+    /// ```
+    pub fn si(self) -> f64 { self.unit.to_si(self.value) }
+
+    /// The dimension.
+    ///
+    /// ```nabi
+    /// use units::Measure;
+    ///
+    /// assert((try! Measure::parse("3 N*m")).dim().name() == "energy");
+    /// ```
+    pub fn dim(self) -> Dim { self.unit.dim }
+
+    /// The same quantity in `unit`; throws a `UnitError::Mismatch` that
+    /// names both dimensions and the factor between them.
+    ///
+    /// ```nabi
+    /// use units::{DynUnit, Measure};
+    ///
+    /// let t = try! Measure::parse("20 degC");
+    /// assert((try! t.to(try! DynUnit::parse("degF"))).value == 68.0);
+    /// ```
+    pub fn to(self, unit: DynUnit) throws (UnitError) -> Measure {
+        if unit.dim != self.unit.dim { throw UnitError::mismatch("convert", self.unit.dim, unit.dim); }
+        // Between temperature scales, one exact step (20 degC is 68 degF,
+        // not 68.00000000000006).
+        if let (a: Scale, b: Scale) = (Scale::of_unit(self.unit), Scale::of_unit(unit)) {
+            return Measure { value: Temperature::on(a, self.value).on_scale(b), unit: unit };
+        }
+        Measure { value: unit.from_si(self.si()), unit: unit }
+    }
+
+    /// `to` with the unit written as text.
+    ///
+    /// ```nabi
+    /// use units::Measure;
+    ///
+    /// assert((try! (try! Measure::parse("1 mi")).to_str("km")).value == 1.609344);
+    /// ```
+    pub fn to_str(self, unit: str) throws (UnitError) -> Measure { try self.to(try DynUnit::parse(unit)) }
+
+    /// The same quantity in coherent SI units (`m/s`, `N`, `K`).
+    ///
+    /// ```nabi
+    /// use units::Measure;
+    ///
+    /// let p = (try! Measure::parse("1 bar")).to_si_unit();
+    /// assert(p.value == 100000.0 && p.unit.symbol == "Pa");
+    /// ```
+    pub fn to_si_unit(self) -> Measure { Measure { value: self.si(), unit: DynUnit::coherent(self.unit.dim) } }
+
+    /// The static quantity, its dimension given by the expected type;
+    /// throws a `UnitError::Mismatch` when it differs.
+    ///
+    /// ```nabi
+    /// use units::Measure;
+    /// use units::kinds::Pressure;
+    ///
+    /// let p: Pressure = try! (try! Measure::parse("2 bar")).fixed();
+    /// assert(p == 200kPa);
+    /// ```
+    pub fn fixed<const L: i32, const M: i32, const T: i32, const I: i32, const K: i32, const N: i32, const J: i32>(self) throws (UnitError) -> Quantity<f64, L, M, T, I, K, N, J> {
+        try Quantity::from_measure(self)
+    }
+
+    /// The value printed with a format spec chosen at run time, and the
+    /// unit after it. A spec known when writing the code goes in an
+    /// f-string, `f"{m:.2}"`, `f"{m:.1e}"`.
+    ///
+    /// ```nabi
+    /// use units::Measure;
+    ///
+    /// let m = try! Measure::parse("2 m");
+    /// assert(f"{m:.2}" == "2.00 m" && f"{m:.1e}" == "2.0e0 m");
+    /// assert(try! m.format(".1e") == "2.0e0 m");
+    /// ```
+    pub fn format(self, spec: str) throws (UnitError) -> str {
+        let n = try format_number(self.value, spec);
+        if self.unit.symbol == "" || self.unit.symbol == "1" { n } else { f"{n} {self.unit.symbol}" }
+    }
+
+    /// Whether the two agree to the relative tolerance `rel` in SI
+    /// units; false for different dimensions.
+    ///
+    /// ```nabi
+    /// use units::Measure;
+    ///
+    /// assert((try! Measure::parse("1 in")).approx_eq(try! Measure::parse("2.54 cm")));
+    /// ```
+    pub fn approx_eq(self, other: Measure, rel: f64 = 1e-12) -> bool {
+        if self.unit.dim != other.unit.dim { return false; }
+        let (a, b) = (self.si(), other.si());
+        (a - b).abs() <= rel * a.abs().max(b.abs())
+    }
+}
+
+// Byte length of the leading decimal number of `t`, 0 when none.
+fn number_end(t: str) -> usize {
+    let b = t.as_bytes();
+    let i = 0;
+    if i < b.len() && (b[i] == '-' as u8 || b[i] == '+' as u8) { i += 1; }
+    let digits = 0;
+    while i < b.len() && (b[i] >= '0' as u8 && b[i] <= '9' as u8) {
+        i += 1;
+        digits += 1;
+    }
+    if i < b.len() && b[i] == '.' as u8 {
+        i += 1;
+        while i < b.len() && (b[i] >= '0' as u8 && b[i] <= '9' as u8) {
+            i += 1;
+            digits += 1;
+        }
+    }
+    if digits == 0 { return 0; }
+    // An exponent only when digits follow, so `2eV` keeps its
+    // electronvolt.
+    if i + 1 < b.len() && (b[i] == 'e' as u8 || b[i] == 'E' as u8) {
+        let j = i + 1;
+        if b[j] == '-' as u8 || b[j] == '+' as u8 { j += 1; }
+        if j < b.len() && b[j] >= '0' as u8 && b[j] <= '9' as u8 {
+            while j < b.len() && b[j] >= '0' as u8 && b[j] <= '9' as u8 { j += 1; }
+            i = j;
+        }
+    }
+    i
+}
+
+// `v` written per the f-string spec `spec` (`".3"`, `">10.2e"`).
+pub(pkg) fn format_number(v: f64, spec: str) throws (UnitError) -> str {
+    let s = try FormatSpec::parse(spec) catch _ {
+        throw UnitError::Value { what: "format spec", got: spec, need: "an f-string number spec such as `.3`, `.2e` or `>10.1f`" };
+    };
+    let f = Formatter::with_spec(s);
+    try Display::fmt(v, ref f) catch _ {
+        throw UnitError::Value { what: "format spec", got: spec, need: "a spec a number takes" };
+    };
+    f.finish()
+}
+
+/// The value and the unit: `3.5 km/h`.
+impl Display for Measure {
+    fn fmt(self, ref f: Formatter) throws (FmtError) {
+        try Display::fmt(self.value, ref f);
+        if self.unit.symbol != "" && self.unit.symbol != "1" {
+            try f.write_str(" ");
+            try f.write_str(self.unit.symbol);
+        }
+    }
+}
+
+impl PartialEq for Measure {
+    fn eq(self, rhs: Measure) -> bool { self.unit.dim == rhs.unit.dim && self.si() == rhs.si() }
+}
+
+impl ops::Mul for Measure {
+    type Output = Measure;
+    fn mul(self, rhs: Measure) -> Measure { Measure { value: self.value * rhs.value, unit: self.unit * rhs.unit } }
+}
+
+impl ops::Div for Measure {
+    type Output = Measure;
+    fn div(self, rhs: Measure) -> Measure { Measure { value: self.value / rhs.value, unit: self.unit / rhs.unit } }
+}
+
+impl ops::Mul<f64> for Measure {
+    type Output = Measure;
+    fn mul(self, rhs: f64) -> Measure { Measure { value: self.value * rhs, unit: self.unit } }
+}
+
+impl ops::Div<f64> for Measure {
+    type Output = Measure;
+    fn div(self, rhs: f64) -> Measure { Measure { value: self.value / rhs, unit: self.unit } }
+}
+
+impl ops::Pow<i32> for Measure {
+    type Output = Measure;
+    fn pow(self, n: i32) -> Measure { Measure { value: self.value.powi(n), unit: self.unit ** n } }
+}
+
+impl ops::Neg for Measure {
+    type Output = Measure;
+    fn neg(self) -> Measure { Measure { value: -self.value, unit: self.unit } }
+}
+
+/// `a + b` in `a`'s unit; an error when the dimensions differ. An
+/// offset unit on the left (a temperature) takes `b` as an interval:
+/// `20 degC + 5 K` is `25 degC`.
+impl ops::Add for Measure {
+    type Output = Result<Measure, UnitError>;
+    fn add(self, rhs: Measure) -> Result<Measure, UnitError> {
+        if self.unit.dim != rhs.unit.dim { return Result::Err(UnitError::mismatch("add", self.unit.dim, rhs.unit.dim)); }
+        Result::Ok(Measure { value: self.value + rhs.value * rhs.unit.scale / self.unit.scale, unit: self.unit })
+    }
+}
+
+/// `a - b` in `a`'s unit; an error when the dimensions differ. Two
+/// readings of one temperature scale give their interval.
+impl ops::Sub for Measure {
+    type Output = Result<Measure, UnitError>;
+    fn sub(self, rhs: Measure) -> Result<Measure, UnitError> {
+        if self.unit.dim != rhs.unit.dim { return Result::Err(UnitError::mismatch("subtract", self.unit.dim, rhs.unit.dim)); }
+        if rhs.unit.offset != 0.0 {
+            let d = (self.si() - rhs.si()) / self.unit.scale;
+            return Result::Ok(Measure { value: d, unit: self.unit.interval() });
+        }
+        Result::Ok(Measure { value: self.value - rhs.value * rhs.unit.scale / self.unit.scale, unit: self.unit })
+    }
+}

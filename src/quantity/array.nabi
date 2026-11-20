@@ -1,0 +1,213 @@
+//! Quantities over core arrays: one unit for a whole field of values.
+//! The broadcast operators work as on the bare arrays, with the
+//! dimension checked once, in the type, not per element. A scalar
+//! quantity or a number goes on either side. A chain of them
+//! (`d ./ t .+ v0`) runs as one loop with no intermediate arrays, as
+//! on bare arrays.
+
+use pkg::{Quantity, Unit};
+use core::array::Array;
+use core::ops::{BroadcastScalar, Broadcastable, Materialize};
+
+// Fusion: the loop runs over the values, and the result's type comes
+// from the dot traits below, so the dimension is checked as for one
+// operator at a time.
+
+impl<const R: usize, const L: i32, const M: i32, const T: i32, const I: i32, const K: i32, const N: i32, const J: i32> Broadcastable<R> for Quantity<Array<f64, R>, L, M, T, I, K, N, J> {
+    type Elem = f64;
+    #[inline]
+    fn broadcast_view(self) -> Array<f64, R> { self.value }
+}
+
+impl<const R: usize, const L: i32, const M: i32, const T: i32, const I: i32, const K: i32, const N: i32, const J: i32> Materialize<f64, R> for Quantity<Array<f64, R>, L, M, T, I, K, N, J> {
+    type Output = Quantity<Array<f64, R>, L, M, T, I, K, N, J>;
+    #[inline]
+    fn materialize(out: Array<f64, R>) -> Quantity<Array<f64, R>, L, M, T, I, K, N, J> { Quantity { value: out } }
+}
+
+impl<const L: i32, const M: i32, const T: i32, const I: i32, const K: i32, const N: i32, const J: i32> BroadcastScalar for Quantity<f64, L, M, T, I, K, N, J> {
+    type Elem = f64;
+    #[inline]
+    fn broadcast_scalar(self) -> f64 { self.value }
+}
+
+impl<const R: usize, const L: i32, const M: i32, const T: i32, const I: i32, const K: i32, const N: i32, const J: i32, const L2: i32, const M2: i32, const T2: i32, const I2: i32, const K2: i32, const N2: i32, const J2: i32> ops::DotMul<Quantity<Array<f64, R>, L2, M2, T2, I2, K2, N2, J2>> for Quantity<Array<f64, R>, L, M, T, I, K, N, J> {
+    type Output = Quantity<Array<f64, R>, { L + L2 }, { M + M2 }, { T + T2 }, { I + I2 }, { K + K2 }, { N + N2 }, { J + J2 }>;
+    #[inline]
+    fn dot_mul(self, rhs: Quantity<Array<f64, R>, L2, M2, T2, I2, K2, N2, J2>) -> Quantity<Array<f64, R>, { L + L2 }, { M + M2 }, { T + T2 }, { I + I2 }, { K + K2 }, { N + N2 }, { J + J2 }> { Quantity { value: self.value .* rhs.value } }
+}
+
+impl<const R: usize, const L: i32, const M: i32, const T: i32, const I: i32, const K: i32, const N: i32, const J: i32, const L2: i32, const M2: i32, const T2: i32, const I2: i32, const K2: i32, const N2: i32, const J2: i32> ops::DotMul<Quantity<f64, L2, M2, T2, I2, K2, N2, J2>> for Quantity<Array<f64, R>, L, M, T, I, K, N, J> {
+    type Output = Quantity<Array<f64, R>, { L + L2 }, { M + M2 }, { T + T2 }, { I + I2 }, { K + K2 }, { N + N2 }, { J + J2 }>;
+    #[inline]
+    fn dot_mul(self, rhs: Quantity<f64, L2, M2, T2, I2, K2, N2, J2>) -> Quantity<Array<f64, R>, { L + L2 }, { M + M2 }, { T + T2 }, { I + I2 }, { K + K2 }, { N + N2 }, { J + J2 }> { Quantity { value: self.value .* rhs.value } }
+}
+
+impl<const R: usize, const L: i32, const M: i32, const T: i32, const I: i32, const K: i32, const N: i32, const J: i32> ops::DotMul<f64> for Quantity<Array<f64, R>, L, M, T, I, K, N, J> {
+    type Output = Quantity<Array<f64, R>, L, M, T, I, K, N, J>;
+    #[inline]
+    fn dot_mul(self, rhs: f64) -> Quantity<Array<f64, R>, L, M, T, I, K, N, J> { Quantity { value: self.value .* rhs } }
+}
+
+impl<const R: usize, const L: i32, const M: i32, const T: i32, const I: i32, const K: i32, const N: i32, const J: i32> ops::DotMul<Array<f64, R>> for Quantity<Array<f64, R>, L, M, T, I, K, N, J> {
+    type Output = Quantity<Array<f64, R>, L, M, T, I, K, N, J>;
+    #[inline]
+    fn dot_mul(self, rhs: Array<f64, R>) -> Quantity<Array<f64, R>, L, M, T, I, K, N, J> { Quantity { value: self.value .* rhs } }
+}
+
+impl<const R: usize, const L: i32, const M: i32, const T: i32, const I: i32, const K: i32, const N: i32, const J: i32, const L2: i32, const M2: i32, const T2: i32, const I2: i32, const K2: i32, const N2: i32, const J2: i32> ops::DotDiv<Quantity<Array<f64, R>, L2, M2, T2, I2, K2, N2, J2>> for Quantity<Array<f64, R>, L, M, T, I, K, N, J> {
+    type Output = Quantity<Array<f64, R>, { L - L2 }, { M - M2 }, { T - T2 }, { I - I2 }, { K - K2 }, { N - N2 }, { J - J2 }>;
+    #[inline]
+    fn dot_div(self, rhs: Quantity<Array<f64, R>, L2, M2, T2, I2, K2, N2, J2>) -> Quantity<Array<f64, R>, { L - L2 }, { M - M2 }, { T - T2 }, { I - I2 }, { K - K2 }, { N - N2 }, { J - J2 }> { Quantity { value: self.value ./ rhs.value } }
+}
+
+impl<const R: usize, const L: i32, const M: i32, const T: i32, const I: i32, const K: i32, const N: i32, const J: i32, const L2: i32, const M2: i32, const T2: i32, const I2: i32, const K2: i32, const N2: i32, const J2: i32> ops::DotDiv<Quantity<f64, L2, M2, T2, I2, K2, N2, J2>> for Quantity<Array<f64, R>, L, M, T, I, K, N, J> {
+    type Output = Quantity<Array<f64, R>, { L - L2 }, { M - M2 }, { T - T2 }, { I - I2 }, { K - K2 }, { N - N2 }, { J - J2 }>;
+    #[inline]
+    fn dot_div(self, rhs: Quantity<f64, L2, M2, T2, I2, K2, N2, J2>) -> Quantity<Array<f64, R>, { L - L2 }, { M - M2 }, { T - T2 }, { I - I2 }, { K - K2 }, { N - N2 }, { J - J2 }> { Quantity { value: self.value ./ rhs.value } }
+}
+
+impl<const R: usize, const L: i32, const M: i32, const T: i32, const I: i32, const K: i32, const N: i32, const J: i32> ops::DotDiv<f64> for Quantity<Array<f64, R>, L, M, T, I, K, N, J> {
+    type Output = Quantity<Array<f64, R>, L, M, T, I, K, N, J>;
+    #[inline]
+    fn dot_div(self, rhs: f64) -> Quantity<Array<f64, R>, L, M, T, I, K, N, J> { Quantity { value: self.value ./ rhs } }
+}
+
+impl<const R: usize, const L: i32, const M: i32, const T: i32, const I: i32, const K: i32, const N: i32, const J: i32> ops::DotAdd for Quantity<Array<f64, R>, L, M, T, I, K, N, J> {
+    type Output = Quantity<Array<f64, R>, L, M, T, I, K, N, J>;
+    #[inline]
+    fn dot_add(self, rhs: Quantity<Array<f64, R>, L, M, T, I, K, N, J>) -> Quantity<Array<f64, R>, L, M, T, I, K, N, J> { Quantity { value: self.value .+ rhs.value } }
+}
+
+impl<const R: usize, const L: i32, const M: i32, const T: i32, const I: i32, const K: i32, const N: i32, const J: i32> ops::DotAdd<Quantity<f64, L, M, T, I, K, N, J>> for Quantity<Array<f64, R>, L, M, T, I, K, N, J> {
+    type Output = Quantity<Array<f64, R>, L, M, T, I, K, N, J>;
+    #[inline]
+    fn dot_add(self, rhs: Quantity<f64, L, M, T, I, K, N, J>) -> Quantity<Array<f64, R>, L, M, T, I, K, N, J> { Quantity { value: self.value .+ rhs.value } }
+}
+
+impl<const R: usize, const L: i32, const M: i32, const T: i32, const I: i32, const K: i32, const N: i32, const J: i32> ops::DotSub for Quantity<Array<f64, R>, L, M, T, I, K, N, J> {
+    type Output = Quantity<Array<f64, R>, L, M, T, I, K, N, J>;
+    #[inline]
+    fn dot_sub(self, rhs: Quantity<Array<f64, R>, L, M, T, I, K, N, J>) -> Quantity<Array<f64, R>, L, M, T, I, K, N, J> { Quantity { value: self.value .- rhs.value } }
+}
+
+impl<const R: usize, const L: i32, const M: i32, const T: i32, const I: i32, const K: i32, const N: i32, const J: i32> ops::DotSub<Quantity<f64, L, M, T, I, K, N, J>> for Quantity<Array<f64, R>, L, M, T, I, K, N, J> {
+    type Output = Quantity<Array<f64, R>, L, M, T, I, K, N, J>;
+    #[inline]
+    fn dot_sub(self, rhs: Quantity<f64, L, M, T, I, K, N, J>) -> Quantity<Array<f64, R>, L, M, T, I, K, N, J> { Quantity { value: self.value .- rhs.value } }
+}
+
+impl<const R: usize, const L: i32, const M: i32, const T: i32, const I: i32, const K: i32, const N: i32, const J: i32> ops::DotLt<Quantity<Array<f64, R>, L, M, T, I, K, N, J>> for Quantity<Array<f64, R>, L, M, T, I, K, N, J> {
+    type Output = Array<bool, R>;
+    fn dot_lt(self, rhs: Quantity<Array<f64, R>, L, M, T, I, K, N, J>) -> Array<bool, R> { self.value .< rhs.value }
+}
+
+impl<const R: usize, const L: i32, const M: i32, const T: i32, const I: i32, const K: i32, const N: i32, const J: i32> ops::DotLt<Quantity<f64, L, M, T, I, K, N, J>> for Quantity<Array<f64, R>, L, M, T, I, K, N, J> {
+    type Output = Array<bool, R>;
+    fn dot_lt(self, rhs: Quantity<f64, L, M, T, I, K, N, J>) -> Array<bool, R> { self.value .< rhs.value }
+}
+
+impl<const R: usize, const L: i32, const M: i32, const T: i32, const I: i32, const K: i32, const N: i32, const J: i32> ops::DotGt<Quantity<Array<f64, R>, L, M, T, I, K, N, J>> for Quantity<Array<f64, R>, L, M, T, I, K, N, J> {
+    type Output = Array<bool, R>;
+    fn dot_gt(self, rhs: Quantity<Array<f64, R>, L, M, T, I, K, N, J>) -> Array<bool, R> { self.value .> rhs.value }
+}
+
+impl<const R: usize, const L: i32, const M: i32, const T: i32, const I: i32, const K: i32, const N: i32, const J: i32> ops::DotGt<Quantity<f64, L, M, T, I, K, N, J>> for Quantity<Array<f64, R>, L, M, T, I, K, N, J> {
+    type Output = Array<bool, R>;
+    fn dot_gt(self, rhs: Quantity<f64, L, M, T, I, K, N, J>) -> Array<bool, R> { self.value .> rhs.value }
+}
+
+// A scalar quantity or a number on the left of an array quantity:
+// `1km .+ d`, `2s .* v`, `2.0 .* d`, `1.0 ./ t`.
+
+impl<const R: usize, const L: i32, const M: i32, const T: i32, const I: i32, const K: i32, const N: i32, const J: i32, const L2: i32, const M2: i32, const T2: i32, const I2: i32, const K2: i32, const N2: i32, const J2: i32> ops::DotMul<Quantity<Array<f64, R>, L2, M2, T2, I2, K2, N2, J2>> for Quantity<f64, L, M, T, I, K, N, J> {
+    type Output = Quantity<Array<f64, R>, { L + L2 }, { M + M2 }, { T + T2 }, { I + I2 }, { K + K2 }, { N + N2 }, { J + J2 }>;
+    #[inline]
+    fn dot_mul(self, rhs: Quantity<Array<f64, R>, L2, M2, T2, I2, K2, N2, J2>) -> Quantity<Array<f64, R>, { L + L2 }, { M + M2 }, { T + T2 }, { I + I2 }, { K + K2 }, { N + N2 }, { J + J2 }> { Quantity { value: self.value .* rhs.value } }
+}
+
+impl<const R: usize, const L: i32, const M: i32, const T: i32, const I: i32, const K: i32, const N: i32, const J: i32, const L2: i32, const M2: i32, const T2: i32, const I2: i32, const K2: i32, const N2: i32, const J2: i32> ops::DotDiv<Quantity<Array<f64, R>, L2, M2, T2, I2, K2, N2, J2>> for Quantity<f64, L, M, T, I, K, N, J> {
+    type Output = Quantity<Array<f64, R>, { L - L2 }, { M - M2 }, { T - T2 }, { I - I2 }, { K - K2 }, { N - N2 }, { J - J2 }>;
+    #[inline]
+    fn dot_div(self, rhs: Quantity<Array<f64, R>, L2, M2, T2, I2, K2, N2, J2>) -> Quantity<Array<f64, R>, { L - L2 }, { M - M2 }, { T - T2 }, { I - I2 }, { K - K2 }, { N - N2 }, { J - J2 }> { Quantity { value: self.value ./ rhs.value } }
+}
+
+impl<const R: usize, const L: i32, const M: i32, const T: i32, const I: i32, const K: i32, const N: i32, const J: i32> ops::DotAdd<Quantity<Array<f64, R>, L, M, T, I, K, N, J>> for Quantity<f64, L, M, T, I, K, N, J> {
+    type Output = Quantity<Array<f64, R>, L, M, T, I, K, N, J>;
+    #[inline]
+    fn dot_add(self, rhs: Quantity<Array<f64, R>, L, M, T, I, K, N, J>) -> Quantity<Array<f64, R>, L, M, T, I, K, N, J> { Quantity { value: self.value .+ rhs.value } }
+}
+
+impl<const R: usize, const L: i32, const M: i32, const T: i32, const I: i32, const K: i32, const N: i32, const J: i32> ops::DotSub<Quantity<Array<f64, R>, L, M, T, I, K, N, J>> for Quantity<f64, L, M, T, I, K, N, J> {
+    type Output = Quantity<Array<f64, R>, L, M, T, I, K, N, J>;
+    #[inline]
+    fn dot_sub(self, rhs: Quantity<Array<f64, R>, L, M, T, I, K, N, J>) -> Quantity<Array<f64, R>, L, M, T, I, K, N, J> { Quantity { value: self.value .- rhs.value } }
+}
+
+impl<const R: usize, const L: i32, const M: i32, const T: i32, const I: i32, const K: i32, const N: i32, const J: i32> ops::DotMul<Quantity<Array<f64, R>, L, M, T, I, K, N, J>> for f64 {
+    type Output = Quantity<Array<f64, R>, L, M, T, I, K, N, J>;
+    #[inline]
+    fn dot_mul(self, rhs: Quantity<Array<f64, R>, L, M, T, I, K, N, J>) -> Quantity<Array<f64, R>, L, M, T, I, K, N, J> { Quantity { value: self .* rhs.value } }
+}
+
+impl<const R: usize, const L: i32, const M: i32, const T: i32, const I: i32, const K: i32, const N: i32, const J: i32> ops::DotDiv<Quantity<Array<f64, R>, L, M, T, I, K, N, J>> for f64 {
+    type Output = Quantity<Array<f64, R>, { -L }, { -M }, { -T }, { -I }, { -K }, { -N }, { -J }>;
+    #[inline]
+    fn dot_div(self, rhs: Quantity<Array<f64, R>, L, M, T, I, K, N, J>) -> Quantity<Array<f64, R>, { -L }, { -M }, { -T }, { -I }, { -K }, { -N }, { -J }> { Quantity { value: self ./ rhs.value } }
+}
+
+impl<const R: usize, const L: i32, const M: i32, const T: i32, const I: i32, const K: i32, const N: i32, const J: i32> Quantity<Array<f64, R>, L, M, T, I, K, N, J> {
+    /// The element at `idx`, a scalar quantity.
+    ///
+    /// ```nabi
+    /// use core::array::Array;
+    /// use units::symbols::m;
+    ///
+    /// assert(m.array(Array::from_list([4.0, 5.0], [2])).at([0]) == 4m);
+    /// ```
+    #[track_caller]
+    pub fn at(self, idx: [usize; R]) -> Quantity<f64, L, M, T, I, K, N, J> { Quantity { value: self.value.at(idx) } }
+
+    /// The shape of the values.
+    ///
+    /// ```nabi
+    /// use core::array::Array;
+    /// use units::symbols::s;
+    ///
+    /// let z: Array<f64, 2> = Array::zeros([2, 3]);
+    /// assert(s.array(z).shape() == [2, 3]);
+    /// ```
+    pub fn shape(self) -> [usize; R] { self.value.shape() }
+
+    /// The number of values.
+    ///
+    /// ```nabi
+    /// use core::array::Array;
+    /// use units::symbols::s;
+    ///
+    /// let z: Array<f64, 1> = Array::zeros([4]);
+    /// assert(s.array(z).len() == 4);
+    /// ```
+    pub fn len(self) -> usize { self.value.len() }
+
+    /// The values expressed in `unit`, plain numbers (a new array).
+    ///
+    /// ```nabi
+    /// use core::array::Array;
+    /// use units::symbols::{m, cm};
+    ///
+    /// let d = m.array(Array::from_list([1.0, 2.0], [2]));
+    /// assert(d.values_in(cm).to_list() == [100.0, 200.0]);
+    /// ```
+    pub fn values_in(self, unit: Unit<L, M, T, I, K, N, J>) -> Array<f64, R> { self.value ./ unit.scale() }
+
+    /// The sum of all values.
+    ///
+    /// ```nabi
+    /// use core::array::Array;
+    /// use units::symbols::m;
+    ///
+    /// assert(m.array(Array::from_list([1.0, 2.0], [2])).sum() == 3m);
+    /// ```
+    pub fn sum(self) -> Quantity<f64, L, M, T, I, K, N, J> { Quantity { value: self.value.sum() } }
+}

@@ -1,0 +1,141 @@
+// Conversion factors against NIST SP 811 (2008), appendix B.8: exact
+// factors compare exactly, rounded ones to their 7 printed digits.
+
+use pkg::DynUnit;
+use pkg::symbols::{acre, atm, au, Btu, cal, cm, deg, dyne, ft, gal, gauss, h, hp, inch, kgf, km, kn, kWh, lb, lbf, ly, mi, min, mmHg, mph, nmi, oz, pc, psi, Torr, yd, yr};
+use pkg::tests::suite::{expect, rel};
+use pkg::unit::catalogue;
+use pkg::unit::prefix::Prefix;
+
+// (unit, factor to SI, relative tolerance)
+const NIST: [(str, f64, f64); 38] = [
+    ("inch", 2.54e-2, 0.0),
+    ("ft", 3.048e-1, 0.0),
+    ("yd", 9.144e-1, 0.0),
+    ("mi", 1.609344e3, 0.0),
+    ("nmi", 1.852e3, 0.0),
+    ("Å", 1.0e-10, 0.0),
+    ("au", 1.495979e11, 5e-7),
+    ("ly", 9.46073e15, 5e-7),
+    ("pc", 3.085678e16, 5e-7),
+    ("acre", 4.046856e3, 5e-7),
+    ("ha", 1.0e4, 0.0),
+    ("gal", 3.785412e-3, 5e-7),
+    ("floz", 2.957353e-5, 5e-7),
+    ("L", 1.0e-3, 0.0),
+    ("lb", 4.5359237e-1, 0.0),
+    ("oz", 2.834952e-2, 5e-7),
+    ("st", 6.350293, 5e-7),
+    ("t", 1.0e3, 0.0),
+    ("Da", 1.660539e-27, 5e-7),
+    ("min", 6.0e1, 0.0),
+    ("h", 3.6e3, 0.0),
+    ("d", 8.64e4, 0.0),
+    ("yr", 3.15576e7, 0.0),
+    ("dyn", 1.0e-5, 0.0),
+    ("lbf", 4.448222, 5e-7),
+    ("kgf", 9.80665, 0.0),
+    ("erg", 1.0e-7, 0.0),
+    ("cal", 4.184, 0.0),
+    ("cal_IT", 4.1868, 0.0),
+    ("Btu", 1.055056e3, 5e-7),
+    ("eV", 1.602177e-19, 5e-7),
+    ("hp", 7.456999e2, 5e-7),
+    ("atm", 1.01325e5, 0.0),
+    ("Torr", 1.333224e2, 5e-7),
+    ("mmHg", 1.333224e2, 5e-7),
+    ("psi", 6.894757e3, 5e-7),
+    ("kn", 5.144444e-1, 5e-7),
+    ("gauss", 1.0e-4, 0.0),
+];
+
+#[test]
+fn nist_factors() {
+    for (u, f, tol) in NIST {
+        let parsed = try! DynUnit::parse(u);
+        rel(parsed.scale, f, tol, u);
+    }
+}
+
+// The static symbols carry the catalogue's factors.
+#[test]
+fn symbols_match_catalogue() {
+    let pairs = [
+        (inch.scale(), "inch"), (ft.scale(), "ft"), (yd.scale(), "yd"), (mi.scale(), "mi"), (nmi.scale(), "nmi"),
+        (au.scale(), "au"), (ly.scale(), "ly"), (pc.scale(), "pc"), (acre.scale(), "acre"), (gal.scale(), "gal"),
+        (lb.scale(), "lb"), (oz.scale(), "oz"), (min.scale(), "min"), (h.scale(), "h"), (yr.scale(), "yr"),
+        (dyne.scale(), "dyn"), (lbf.scale(), "lbf"), (kgf.scale(), "kgf"), (cal.scale(), "cal"), (Btu.scale(), "Btu"),
+        (hp.scale(), "hp"), (atm.scale(), "atm"), (Torr.scale(), "Torr"), (mmHg.scale(), "mmHg"), (psi.scale(), "psi"),
+        (kn.scale(), "kn"), (mph.scale(), "mph"), (gauss.scale(), "gauss"), (deg.scale(), "deg"),
+    ];
+    for (s, u) in pairs {
+        let e = catalogue::find(u) ?? panic(u);
+        rel(s, e.scale, 1e-15, u);
+    }
+}
+
+#[test]
+fn derived_factors() {
+    // Factors that follow from the definitions.
+    rel(psi.scale(), lbf.scale() / (inch.scale() * inch.scale()), 1e-15, "psi = lbf/in^2");
+    rel(hp.scale(), 550.0 * ft.scale() * lbf.scale(), 1e-15, "hp = 550 ft lbf/s");
+    rel(mph.scale(), mi.scale() / h.scale(), 1e-15, "mph = mi/h");
+    rel(kWh.scale(), 3.6e6, 0.0, "kWh");
+    rel(Torr.scale(), atm.scale() / 760.0, 1e-15, "torr = atm/760");
+    rel(gal.scale(), 231.0 * inch.cubed().scale(), 1e-15, "gallon = 231 in^3");
+    rel(acre.scale(), 43560.0 * ft.squared().scale(), 1e-15, "acre = 43560 ft^2");
+    rel(oz.scale(), lb.scale() / 16.0, 1e-15, "oz = lb/16");
+    rel(ly.scale(), 299792458.0 * yr.scale(), 1e-15, "light-year = c yr");
+}
+
+#[test]
+fn static_conversions() {
+    expect(1mi.value_in(ft) == 5280.0, "mile in feet");
+    rel(1ft.value_in(inch), 12.0, 1e-15, "foot in inches");
+    rel(100km.value_in(mi), 62.13711922373339, 1e-15, "km in miles");
+    rel((60mph).value_in(km / h), 96.56064, 1e-15, "mph in km/h");
+    rel(1atm.value_in(psi), 14.695948775513449, 1e-14, "atm in psi");
+    rel(1.0Btu.value_in(cal), 252.16440072179732, 1e-14, "Btu in cal");
+    rel((1kn).value_in(km / h), 1.852, 1e-15, "knot in km/h");
+    rel(5km.to(mi).value, 3.1068559611866697, 1e-15, "to");
+    expect(5km.to(mi).unit.symbol == "mi", "to keeps the symbol");
+    rel((90deg).value, f64::PI / 2.0, 1e-16, "degree");
+    expect((2.0 * cm.scale()) == 0.02, "centimetre scale");
+}
+
+// Every prefix, quecto to quetta, on the metre.
+#[test]
+fn prefixes() {
+    for p in Prefix::all() {
+        let u = try! DynUnit::parse(p.symbol + "m");
+        rel(u.scale, p.factor(), 1e-15, p.name);
+        let n = try! DynUnit::parse(p.name + "metre");
+        expect(n.scale == u.scale, f"{p.name}metre");
+        let f = p.factor();
+        let back = if p.power >= 0 { f / 10.0.powi(p.power) } else { f * 10.0.powi(-p.power) };
+        rel(back, 1.0, 1e-15, "factor is a power of ten");
+    }
+    expect((try! DynUnit::parse("μs")).scale == 1e-6, "Greek mu");
+    expect((try! DynUnit::parse("µs")).scale == 1e-6, "micro sign");
+    expect((try! DynUnit::parse("us")).scale == 1e-6, "ASCII u");
+    expect((try! DynUnit::parse("dam")).scale == 10.0, "deca is da");
+    expect((try! DynUnit::parse("kg")).scale == 1.0, "kilogram");
+    expect((try! DynUnit::parse("Mg")).scale == 1000.0, "megagram");
+    rel((try! DynUnit::parse("GeV")).scale, 1.602176634e-10, 1e-15, "GeV");
+    expect((try! DynUnit::parse("mbar")).scale == 100.0, "millibar");
+    expect((try! DynUnit::parse("min")).scale == 60.0, "min is a minute, not a milli-inch");
+    expect((try! DynUnit::parse("cd")).dim.luminosity == 1, "cd is a candela");
+    expect((try! DynUnit::parse("nmi")).scale == 1852.0, "nmi is a nautical mile");
+}
+
+#[test]
+fn compound_conversions() {
+    let kmh = try! DynUnit::parse("km/h");
+    rel(kmh.scale, 1.0 / 3.6, 1e-15, "km/h");
+    let g = try! DynUnit::parse("ft/s^2");
+    rel(9.80665 / g.scale, 32.17404855643044, 1e-15, "g in ft/s^2");
+    let r = try! DynUnit::parse("J/(mol*K)");
+    expect(r.dim == pkg::constants::R.dim(), "gas constant unit");
+    let w = try! DynUnit::parse("kWh/yr");
+    rel(w.scale, 3.6e6 / 31557600.0, 1e-15, "kWh per year in W");
+}

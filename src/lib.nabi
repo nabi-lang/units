@@ -1,0 +1,36 @@
+//! Physical quantities with units. A `Quantity` carries its dimension
+//! (the exponents of the seven SI base quantities) in its type, so a
+//! formula that mixes up a length and a time does not compile, and the
+//! check costs nothing when it runs. Units read at run time go through
+//! `DynUnit` and `Measure`, which check the dimension when they run and
+//! throw a `UnitError` that names both sides.
+//!
+//! Values are held in coherent SI units; a unit is a symbol and a scale.
+//! Number suffixes (`3km`, `20degC`) come from `literals`, the `→`
+//! conversion and `°` from `ops`; both are features on by default.
+
+// Constants and unit constants go by their symbols (`k_B`, `km`,
+// `kPa`, `μs`), which case tells apart.
+#[allow(non_upper_case_globals)]
+pub mod constants;
+pub mod kinds;
+#[cfg(feature = "literals")]
+pub mod literals;
+#[cfg(feature = "ops")]
+pub mod ops;
+#[allow(non_upper_case_globals)]
+pub mod symbols;
+pub mod temperature;
+pub mod unit;
+
+mod dim;
+mod error;
+mod measure;
+mod quantity;
+
+pub use dim::Dim;
+pub use error::UnitError;
+pub use measure::Measure;
+pub use quantity::Quantity;
+pub use temperature::Temperature;
+pub use unit::{DynUnit, Unit};

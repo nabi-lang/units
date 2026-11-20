@@ -1,0 +1,76 @@
+// Temperature scales: fixed points, round trips, and the affine rules.
+
+use pkg::symbols::{degC, degF, degR, K, kelvin, mK};
+use pkg::temperature::Scale;
+use pkg::tests::suite::{close, expect};
+use pkg::{DynUnit, Measure, Temperature};
+use std::random::{Rng, Xoshiro256PlusPlus};
+
+#[test]
+fn fixed_points() {
+    close(0degC.kelvin(), 273.15, 0.0, "ice point");
+    close(100degC.fahrenheit(), 212.0, 0.0, "steam point");
+    close(32degF.celsius(), 0.0, 0.0, "freezing in F");
+    close((-40degC).fahrenheit(), -40.0, 0.0, "C = F at -40");
+    close(Temperature::from_kelvin(0.0).fahrenheit(), -459.67, 1e-12, "absolute zero in F");
+    close(Temperature::from_kelvin(0.0).rankine(), 0.0, 0.0, "absolute zero in R");
+    close(0degF.rankine(), 459.67, 0.0, "F to R");
+    close(491.67degR.celsius(), 0.0, 1e-12, "R to C");
+    close(20degC.fahrenheit(), 68.0, 0.0, "room temperature is exactly 68 F");
+    close(37degC.fahrenheit(), 98.6, 1e-13, "body temperature");
+}
+
+#[test]
+fn round_trips() {
+    let g = Xoshiro256PlusPlus::seed(11);
+    let scales = [Scale::Kelvin, Scale::Celsius, Scale::Fahrenheit, Scale::Rankine];
+    for _ in 0..500 {
+        let v = g.uniform(-500.0, 5000.0);
+        for a in scales {
+            for b in scales {
+                let t = Temperature::on(a, v);
+                let back = Temperature::on(b, t.on_scale(b)).on_scale(a);
+                close(back, v, 1e-11 * (1.0 + v.abs()), "round trip");
+            }
+        }
+    }
+}
+
+#[test]
+fn affine_rules() {
+    // Reading minus reading is an interval in kelvin.
+    expect(30degC - 20degC == 10K, "C difference");
+    close((50degF - 32degF).value, 10.0, 1e-13, "F difference in K");
+    close((20degC - 68degF).value, 0.0, 1e-12, "same temperature");
+    // Reading plus interval stays on its scale.
+    let t = 20degC + 5K;
+    expect(t.scale() == Scale::Celsius && t.celsius() == 25.0, "C + K");
+    close((68degF + 5K).celsius(), 25.0, 1e-12, "F + K");
+    close((68degF - 10K).fahrenheit(), 50.0, 1e-12, "F - K");
+    expect(0degC + 1000mK == 0degC + 1K, "millikelvin intervals");
+    expect(20degC == 68degF, "equal across scales");
+    expect(20degC < 70degF && 0degC + 300K > 0degC, "order");
+    // The absolute temperature for physics.
+    expect(25degC.absolute() == 298.15K, "absolute");
+    expect(Temperature::from_absolute(300K).kelvin() == 300.0, "from absolute");
+}
+
+#[test]
+fn printing_and_measures() {
+    expect(f"{20degC}" == "20 °C", "display");
+    expect(f"{20degC.to(degF)}" == "68 °F", "to F");
+    expect(20degC.to(kelvin).value == 293.15, "to K");
+    expect(20degC.to(degR).unit.symbol == "°R", "to R");
+    // Measures with offset units convert exactly between scales.
+    let m = try! Measure::parse("20 degC");
+    expect((try! m.to_str("degF")).value == 68.0, "measure C to F");
+    expect((try! m.to_str("K")).value == 293.15, "measure C to K");
+    expect((try! (try! Measure::parse("98.6 °F")).to_str("°C")).approx_eq(try! Measure::parse("37 degC")), "body");
+    // In a product an offset unit is its interval.
+    let c = try! DynUnit::parse("J/(kg*degC)");
+    expect(c.offset == 0.0 && c.scale == 1.0, "specific heat per degree");
+    // Temperature differences of measures.
+    let d = try! (try! Measure::parse("30 degC") - try! Measure::parse("20 degC")).get();
+    expect(d.value == 10.0 && d.unit.offset == 0.0, "measure interval");
+    expect(degC == Scale::Celsius && degF == Scale::Fahrenheit, "scale symbols");
+}

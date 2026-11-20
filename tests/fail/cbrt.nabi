@@ -1,0 +1,6 @@
+// expect: no method `cbrt`
+// An area has no SI cube root.
+fn main() {
+    let r = 4m².cbrt();
+    println(r);
+}

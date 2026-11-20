@@ -1,0 +1,1311 @@
+//! Number suffixes for the common units: `3km`, `9.81m / 1s / 1s`, `5kΩ`,
+//! `20degC`. Each gives a static `Quantity` (a `Temperature` for the
+//! temperature scales). A suffix is a name glued to the number, so `m²`,
+//! `μs` and `Ω` work, `%` and `°C` do not (`percent`, `degC`); none may
+//! start with `e` (`2e3` is an exponent), so the electronvolt has `keV`,
+//! `MeV`, ... but no `eV` suffix (write `eV.of(2.0)`).
+//!
+//! `ms` and `us` sit at priority -2, below the `f64` ones of the `signal`
+//! package (-1), so adding this package never changes signal code: with
+//! both, the slot picks (`5ms` where an `f64` goes is signal's, where a
+//! `Time` goes this package's) and an untyped `let t = 5ms;` stays
+//! signal's number of seconds; write `5μs` or `ms.of(5.0)` for a quantity.
+
+use pkg::Quantity;
+use pkg::temperature::{Scale, Temperature};
+
+/// `1m` is one m.
+///
+/// ```nabi
+/// assert(2m == units::symbols::m.of(2.0));
+/// ```
+#[literal(number "m")]
+pub const fn metres(n: f64) -> pkg::kinds::Length { Quantity { value: n } }
+
+/// `1km` is one km.
+///
+/// ```nabi
+/// assert(2km == units::symbols::km.of(2.0));
+/// ```
+#[literal(number "km")]
+pub const fn kilometres(n: f64) -> pkg::kinds::Length { Quantity { value: n * 1e3 } }
+
+/// `1cm` is one cm.
+///
+/// ```nabi
+/// assert(2cm == units::symbols::cm.of(2.0));
+/// ```
+#[literal(number "cm")]
+pub const fn centimetres(n: f64) -> pkg::kinds::Length { Quantity { value: n / 1e2 } }
+
+/// `1mm` is one mm.
+///
+/// ```nabi
+/// assert(2mm == units::symbols::mm.of(2.0));
+/// ```
+#[literal(number "mm")]
+pub const fn millimetres(n: f64) -> pkg::kinds::Length { Quantity { value: n / 1e3 } }
+
+/// `1μm` is one μm.
+///
+/// ```nabi
+/// assert(2μm == units::symbols::μm.of(2.0));
+/// ```
+#[literal(number "μm")]
+pub const fn micrometres(n: f64) -> pkg::kinds::Length { Quantity { value: n / 1e6 } }
+
+/// `1µm` is one µm.
+///
+/// ```nabi
+/// assert(2µm == units::symbols::μm.of(2.0));
+/// ```
+#[literal(number "µm")]
+pub const fn micrometres_micro_sign(n: f64) -> pkg::kinds::Length { Quantity { value: n / 1e6 } }
+
+/// `1um` is one um.
+///
+/// ```nabi
+/// assert(2um == units::symbols::um.of(2.0));
+/// ```
+#[literal(number "um")]
+pub const fn micrometres_ascii(n: f64) -> pkg::kinds::Length { Quantity { value: n / 1e6 } }
+
+/// `1nm` is one nm.
+///
+/// ```nabi
+/// assert(2nm == units::symbols::nm.of(2.0));
+/// ```
+#[literal(number "nm")]
+pub const fn nanometres(n: f64) -> pkg::kinds::Length { Quantity { value: n / 1e9 } }
+
+/// `1pm` is one pm.
+///
+/// ```nabi
+/// assert(2pm == units::symbols::pm.of(2.0));
+/// ```
+#[literal(number "pm")]
+pub const fn picometres(n: f64) -> pkg::kinds::Length { Quantity { value: n / 1e12 } }
+
+/// `1fm` is one fm.
+///
+/// ```nabi
+/// assert(2fm == units::symbols::fm.of(2.0));
+/// ```
+#[literal(number "fm")]
+pub const fn femtometres(n: f64) -> pkg::kinds::Length { Quantity { value: n / 1e15 } }
+
+/// `1Å` is one Å.
+///
+/// ```nabi
+/// assert(2Å == units::symbols::Å.of(2.0));
+/// ```
+#[literal(number "Å")]
+pub const fn angstroms(n: f64) -> pkg::kinds::Length { Quantity { value: n / 1e10 } }
+
+/// `1inch` is one in.
+///
+/// ```nabi
+/// assert(2inch == units::symbols::inch.of(2.0));
+/// ```
+#[literal(number "inch")]
+pub const fn inches(n: f64) -> pkg::kinds::Length { Quantity { value: n * 0.0254 } }
+
+/// `1ft` is one ft.
+///
+/// ```nabi
+/// assert(2ft == units::symbols::ft.of(2.0));
+/// ```
+#[literal(number "ft")]
+pub const fn feet(n: f64) -> pkg::kinds::Length { Quantity { value: n * 0.3048 } }
+
+/// `1yd` is one yd.
+///
+/// ```nabi
+/// assert(2yd == units::symbols::yd.of(2.0));
+/// ```
+#[literal(number "yd")]
+pub const fn yards(n: f64) -> pkg::kinds::Length { Quantity { value: n * 0.9144 } }
+
+/// `1mi` is one mi.
+///
+/// ```nabi
+/// assert(2mi == units::symbols::mi.of(2.0));
+/// ```
+#[literal(number "mi")]
+pub const fn miles(n: f64) -> pkg::kinds::Length { Quantity { value: n * 1609.344 } }
+
+/// `1nmi` is one nmi.
+///
+/// ```nabi
+/// assert(2nmi == units::symbols::nmi.of(2.0));
+/// ```
+#[literal(number "nmi")]
+pub const fn nautical_miles(n: f64) -> pkg::kinds::Length { Quantity { value: n * 1852.0 } }
+
+/// `1au` is one au.
+///
+/// ```nabi
+/// assert(2au == units::symbols::au.of(2.0));
+/// ```
+#[literal(number "au")]
+pub const fn astronomical_units(n: f64) -> pkg::kinds::Length { Quantity { value: n * 149597870700.0 } }
+
+/// `1ly` is one ly.
+///
+/// ```nabi
+/// assert(2ly == units::symbols::ly.of(2.0));
+/// ```
+#[literal(number "ly")]
+pub const fn light_years(n: f64) -> pkg::kinds::Length { Quantity { value: n * 9460730472580800.0 } }
+
+/// `1pc` is one pc.
+///
+/// ```nabi
+/// assert(2pc == units::symbols::pc.of(2.0));
+/// ```
+#[literal(number "pc")]
+pub const fn parsecs(n: f64) -> pkg::kinds::Length { Quantity { value: n * (149597870700.0 * 648000.0 / f64::PI) } }
+
+/// `1m²` is one m².
+///
+/// ```nabi
+/// assert(2m² == units::symbols::m².of(2.0));
+/// ```
+#[literal(number "m²")]
+pub const fn square_metres(n: f64) -> pkg::kinds::Area { Quantity { value: n } }
+
+/// `1km²` is one km².
+///
+/// ```nabi
+/// assert(2km² == units::symbols::km².of(2.0));
+/// ```
+#[literal(number "km²")]
+pub const fn square_kilometres(n: f64) -> pkg::kinds::Area { Quantity { value: n * 1e6 } }
+
+/// `1cm²` is one cm².
+///
+/// ```nabi
+/// assert(2cm² == units::symbols::cm².of(2.0));
+/// ```
+#[literal(number "cm²")]
+pub const fn square_centimetres(n: f64) -> pkg::kinds::Area { Quantity { value: n / 1e4 } }
+
+/// `1mm²` is one mm².
+///
+/// ```nabi
+/// assert(2mm² == units::symbols::mm².of(2.0));
+/// ```
+#[literal(number "mm²")]
+pub const fn square_millimetres(n: f64) -> pkg::kinds::Area { Quantity { value: n / 1e6 } }
+
+/// `1ha` is one ha.
+///
+/// ```nabi
+/// assert(2ha == units::symbols::ha.of(2.0));
+/// ```
+#[literal(number "ha")]
+pub const fn hectares(n: f64) -> pkg::kinds::Area { Quantity { value: n * 1e4 } }
+
+/// `1acre` is one acre.
+///
+/// ```nabi
+/// assert(2acre == units::symbols::acre.of(2.0));
+/// ```
+#[literal(number "acre")]
+pub const fn acres(n: f64) -> pkg::kinds::Area { Quantity { value: n * 4046.8564224 } }
+
+/// `1m³` is one m³.
+///
+/// ```nabi
+/// assert(2m³ == units::symbols::m³.of(2.0));
+/// ```
+#[literal(number "m³")]
+pub const fn cubic_metres(n: f64) -> pkg::kinds::Volume { Quantity { value: n } }
+
+/// `1cm³` is one cm³.
+///
+/// ```nabi
+/// assert(2cm³ == units::symbols::cm³.of(2.0));
+/// ```
+#[literal(number "cm³")]
+pub const fn cubic_centimetres(n: f64) -> pkg::kinds::Volume { Quantity { value: n / 1e6 } }
+
+/// `1mm³` is one mm³.
+///
+/// ```nabi
+/// assert(2mm³ == units::symbols::mm³.of(2.0));
+/// ```
+#[literal(number "mm³")]
+pub const fn cubic_millimetres(n: f64) -> pkg::kinds::Volume { Quantity { value: n / 1e9 } }
+
+/// `1L` is one L.
+///
+/// ```nabi
+/// assert(2L == units::symbols::L.of(2.0));
+/// ```
+#[literal(number "L")]
+pub const fn litres(n: f64) -> pkg::kinds::Volume { Quantity { value: n / 1e3 } }
+
+/// `1mL` is one mL.
+///
+/// ```nabi
+/// assert(2mL == units::symbols::mL.of(2.0));
+/// ```
+#[literal(number "mL")]
+pub const fn millilitres(n: f64) -> pkg::kinds::Volume { Quantity { value: n / 1e6 } }
+
+/// `1μL` is one μL.
+///
+/// ```nabi
+/// assert(2μL == units::symbols::μL.of(2.0));
+/// ```
+#[literal(number "μL")]
+pub const fn microlitres(n: f64) -> pkg::kinds::Volume { Quantity { value: n / 1e9 } }
+
+/// `1gal` is one gal.
+///
+/// ```nabi
+/// assert(2gal == units::symbols::gal.of(2.0));
+/// ```
+#[literal(number "gal")]
+pub const fn us_gallons(n: f64) -> pkg::kinds::Volume { Quantity { value: n * 3.785411784e-3 } }
+
+/// `1kg` is one kg.
+///
+/// ```nabi
+/// assert(2kg == units::symbols::kg.of(2.0));
+/// ```
+#[literal(number "kg")]
+pub const fn kilograms(n: f64) -> pkg::kinds::Mass { Quantity { value: n } }
+
+/// `1g` is one g.
+///
+/// ```nabi
+/// assert(2g == units::symbols::g.of(2.0));
+/// ```
+#[literal(number "g")]
+pub const fn grams(n: f64) -> pkg::kinds::Mass { Quantity { value: n / 1e3 } }
+
+/// `1mg` is one mg.
+///
+/// ```nabi
+/// assert(2mg == units::symbols::mg.of(2.0));
+/// ```
+#[literal(number "mg")]
+pub const fn milligrams(n: f64) -> pkg::kinds::Mass { Quantity { value: n / 1e6 } }
+
+/// `1μg` is one μg.
+///
+/// ```nabi
+/// assert(2μg == units::symbols::μg.of(2.0));
+/// ```
+#[literal(number "μg")]
+pub const fn micrograms(n: f64) -> pkg::kinds::Mass { Quantity { value: n / 1e9 } }
+
+/// `1t` is one t.
+///
+/// ```nabi
+/// assert(2t == units::symbols::t.of(2.0));
+/// ```
+#[literal(number "t")]
+pub const fn tonnes(n: f64) -> pkg::kinds::Mass { Quantity { value: n * 1e3 } }
+
+/// `1lb` is one lb.
+///
+/// ```nabi
+/// assert(2lb == units::symbols::lb.of(2.0));
+/// ```
+#[literal(number "lb")]
+pub const fn pounds(n: f64) -> pkg::kinds::Mass { Quantity { value: n * 0.45359237 } }
+
+/// `1oz` is one oz.
+///
+/// ```nabi
+/// assert(2oz == units::symbols::oz.of(2.0));
+/// ```
+#[literal(number "oz")]
+pub const fn ounces(n: f64) -> pkg::kinds::Mass { Quantity { value: n * 0.028349523125 } }
+
+/// `1Da` is one Da.
+///
+/// ```nabi
+/// assert(2Da == units::symbols::Da.of(2.0));
+/// ```
+#[literal(number "Da")]
+pub const fn daltons(n: f64) -> pkg::kinds::Mass { Quantity { value: n * 1.66053906892e-27 } }
+
+/// `1s` is one s.
+///
+/// ```nabi
+/// assert(2s == units::symbols::s.of(2.0));
+/// ```
+#[literal(number "s")]
+pub const fn seconds(n: f64) -> pkg::kinds::Time { Quantity { value: n } }
+
+/// `1ms` is one ms.
+///
+/// ```nabi
+/// assert(2ms == units::symbols::ms.of(2.0));
+/// ```
+#[literal(number "ms", priority = -2)]
+pub const fn milliseconds(n: f64) -> pkg::kinds::Time { Quantity { value: n / 1e3 } }
+
+/// `1μs` is one μs.
+///
+/// ```nabi
+/// assert(2μs == units::symbols::μs.of(2.0));
+/// ```
+#[literal(number "μs")]
+pub const fn microseconds(n: f64) -> pkg::kinds::Time { Quantity { value: n / 1e6 } }
+
+/// `1µs` is one µs.
+///
+/// ```nabi
+/// assert(2µs == units::symbols::μs.of(2.0));
+/// ```
+#[literal(number "µs")]
+pub const fn microseconds_micro_sign(n: f64) -> pkg::kinds::Time { Quantity { value: n / 1e6 } }
+
+/// `1us` is one us.
+///
+/// ```nabi
+/// assert(2us == units::symbols::us.of(2.0));
+/// ```
+#[literal(number "us", priority = -2)]
+pub const fn microseconds_ascii(n: f64) -> pkg::kinds::Time { Quantity { value: n / 1e6 } }
+
+/// `1ns` is one ns.
+///
+/// ```nabi
+/// assert(2ns == units::symbols::ns.of(2.0));
+/// ```
+#[literal(number "ns")]
+pub const fn nanoseconds(n: f64) -> pkg::kinds::Time { Quantity { value: n / 1e9 } }
+
+/// `1ps` is one ps.
+///
+/// ```nabi
+/// assert(2ps == units::symbols::ps.of(2.0));
+/// ```
+#[literal(number "ps")]
+pub const fn picoseconds(n: f64) -> pkg::kinds::Time { Quantity { value: n / 1e12 } }
+
+/// `1min` is one min.
+///
+/// ```nabi
+/// assert(2min == units::symbols::min.of(2.0));
+/// ```
+#[literal(number "min")]
+pub const fn minutes(n: f64) -> pkg::kinds::Time { Quantity { value: n * 60.0 } }
+
+/// `1h` is one h.
+///
+/// ```nabi
+/// assert(2h == units::symbols::h.of(2.0));
+/// ```
+#[literal(number "h")]
+pub const fn hours(n: f64) -> pkg::kinds::Time { Quantity { value: n * 3600.0 } }
+
+/// `1d` is one d.
+///
+/// ```nabi
+/// assert(2d == units::symbols::d.of(2.0));
+/// ```
+#[literal(number "d")]
+pub const fn days(n: f64) -> pkg::kinds::Time { Quantity { value: n * 86400.0 } }
+
+/// `1wk` is one wk.
+///
+/// ```nabi
+/// assert(2wk == units::symbols::wk.of(2.0));
+/// ```
+#[literal(number "wk")]
+pub const fn weeks(n: f64) -> pkg::kinds::Time { Quantity { value: n * 604800.0 } }
+
+/// `1yr` is one yr.
+///
+/// ```nabi
+/// assert(2yr == units::symbols::yr.of(2.0));
+/// ```
+#[literal(number "yr")]
+pub const fn julian_years(n: f64) -> pkg::kinds::Time { Quantity { value: n * 31557600.0 } }
+
+/// `1Hz` is one Hz.
+///
+/// ```nabi
+/// assert(2Hz == units::symbols::Hz.of(2.0));
+/// ```
+#[literal(number "Hz")]
+pub const fn hertz(n: f64) -> pkg::kinds::Frequency { Quantity { value: n } }
+
+/// `1kHz` is one kHz.
+///
+/// ```nabi
+/// assert(2kHz == units::symbols::kHz.of(2.0));
+/// ```
+#[literal(number "kHz")]
+pub const fn kilohertz(n: f64) -> pkg::kinds::Frequency { Quantity { value: n * 1e3 } }
+
+/// `1MHz` is one MHz.
+///
+/// ```nabi
+/// assert(2MHz == units::symbols::MHz.of(2.0));
+/// ```
+#[literal(number "MHz")]
+pub const fn megahertz(n: f64) -> pkg::kinds::Frequency { Quantity { value: n * 1e6 } }
+
+/// `1GHz` is one GHz.
+///
+/// ```nabi
+/// assert(2GHz == units::symbols::GHz.of(2.0));
+/// ```
+#[literal(number "GHz")]
+pub const fn gigahertz(n: f64) -> pkg::kinds::Frequency { Quantity { value: n * 1e9 } }
+
+/// `1THz` is one THz.
+///
+/// ```nabi
+/// assert(2THz == units::symbols::THz.of(2.0));
+/// ```
+#[literal(number "THz")]
+pub const fn terahertz(n: f64) -> pkg::kinds::Frequency { Quantity { value: n * 1e12 } }
+
+/// `1rpm` is one rpm.
+///
+/// ```nabi
+/// assert(2rpm == units::symbols::rpm.of(2.0));
+/// ```
+#[literal(number "rpm")]
+pub const fn revolutions_per_minute(n: f64) -> pkg::kinds::Frequency { Quantity { value: n * (f64::PI / 30.0) } }
+
+/// `1Bq` is one Bq.
+///
+/// ```nabi
+/// assert(2Bq == units::symbols::Bq.of(2.0));
+/// ```
+#[literal(number "Bq")]
+pub const fn becquerels(n: f64) -> pkg::kinds::Frequency { Quantity { value: n } }
+
+/// `1kn` is one kn.
+///
+/// ```nabi
+/// assert(2kn == units::symbols::kn.of(2.0));
+/// ```
+#[literal(number "kn")]
+pub const fn knots(n: f64) -> pkg::kinds::Velocity { Quantity { value: n * (1852.0 / 3600.0) } }
+
+/// `1mph` is one mph.
+///
+/// ```nabi
+/// assert(2mph == units::symbols::mph.of(2.0));
+/// ```
+#[literal(number "mph")]
+pub const fn miles_per_hour(n: f64) -> pkg::kinds::Velocity { Quantity { value: n * 0.44704 } }
+
+/// `1kph` is one km/h.
+///
+/// ```nabi
+/// assert(2kph == units::symbols::kph.of(2.0));
+/// ```
+#[literal(number "kph")]
+pub const fn kilometres_per_hour(n: f64) -> pkg::kinds::Velocity { Quantity { value: n / 3.6 } }
+
+/// `1gn` is one gn.
+///
+/// ```nabi
+/// assert(2gn == units::symbols::gn.of(2.0));
+/// ```
+#[literal(number "gn")]
+pub const fn standard_gravities(n: f64) -> pkg::kinds::Acceleration { Quantity { value: n * 9.80665 } }
+
+/// `1N` is one N.
+///
+/// ```nabi
+/// assert(2N == units::symbols::N.of(2.0));
+/// ```
+#[literal(number "N")]
+pub const fn newtons(n: f64) -> pkg::kinds::Force { Quantity { value: n } }
+
+/// `1kN` is one kN.
+///
+/// ```nabi
+/// assert(2kN == units::symbols::kN.of(2.0));
+/// ```
+#[literal(number "kN")]
+pub const fn kilonewtons(n: f64) -> pkg::kinds::Force { Quantity { value: n * 1e3 } }
+
+/// `1MN` is one MN.
+///
+/// ```nabi
+/// assert(2MN == units::symbols::MN.of(2.0));
+/// ```
+#[literal(number "MN")]
+pub const fn meganewtons(n: f64) -> pkg::kinds::Force { Quantity { value: n * 1e6 } }
+
+/// `1mN` is one mN.
+///
+/// ```nabi
+/// assert(2mN == units::symbols::mN.of(2.0));
+/// ```
+#[literal(number "mN")]
+pub const fn millinewtons(n: f64) -> pkg::kinds::Force { Quantity { value: n / 1e3 } }
+
+/// `1lbf` is one lbf.
+///
+/// ```nabi
+/// assert(2lbf == units::symbols::lbf.of(2.0));
+/// ```
+#[literal(number "lbf")]
+pub const fn pounds_force(n: f64) -> pkg::kinds::Force { Quantity { value: n * 4.4482216152605 } }
+
+/// `1kgf` is one kgf.
+///
+/// ```nabi
+/// assert(2kgf == units::symbols::kgf.of(2.0));
+/// ```
+#[literal(number "kgf")]
+pub const fn kilograms_force(n: f64) -> pkg::kinds::Force { Quantity { value: n * 9.80665 } }
+
+/// `1dyne` is one dyn.
+///
+/// ```nabi
+/// assert(2dyne == units::symbols::dyne.of(2.0));
+/// ```
+#[literal(number "dyne")]
+pub const fn dynes(n: f64) -> pkg::kinds::Force { Quantity { value: n / 1e5 } }
+
+/// `1J` is one J.
+///
+/// ```nabi
+/// assert(2J == units::symbols::J.of(2.0));
+/// ```
+#[literal(number "J")]
+pub const fn joules(n: f64) -> pkg::kinds::Energy { Quantity { value: n } }
+
+/// `1mJ` is one mJ.
+///
+/// ```nabi
+/// assert(2mJ == units::symbols::mJ.of(2.0));
+/// ```
+#[literal(number "mJ")]
+pub const fn millijoules(n: f64) -> pkg::kinds::Energy { Quantity { value: n / 1e3 } }
+
+/// `1kJ` is one kJ.
+///
+/// ```nabi
+/// assert(2kJ == units::symbols::kJ.of(2.0));
+/// ```
+#[literal(number "kJ")]
+pub const fn kilojoules(n: f64) -> pkg::kinds::Energy { Quantity { value: n * 1e3 } }
+
+/// `1MJ` is one MJ.
+///
+/// ```nabi
+/// assert(2MJ == units::symbols::MJ.of(2.0));
+/// ```
+#[literal(number "MJ")]
+pub const fn megajoules(n: f64) -> pkg::kinds::Energy { Quantity { value: n * 1e6 } }
+
+/// `1GJ` is one GJ.
+///
+/// ```nabi
+/// assert(2GJ == units::symbols::GJ.of(2.0));
+/// ```
+#[literal(number "GJ")]
+pub const fn gigajoules(n: f64) -> pkg::kinds::Energy { Quantity { value: n * 1e9 } }
+
+/// `1Wh` is one Wh.
+///
+/// ```nabi
+/// assert(2Wh == units::symbols::Wh.of(2.0));
+/// ```
+#[literal(number "Wh")]
+pub const fn watt_hours(n: f64) -> pkg::kinds::Energy { Quantity { value: n * 3600.0 } }
+
+/// `1kWh` is one kWh.
+///
+/// ```nabi
+/// assert(2kWh == units::symbols::kWh.of(2.0));
+/// ```
+#[literal(number "kWh")]
+pub const fn kilowatt_hours(n: f64) -> pkg::kinds::Energy { Quantity { value: n * 3.6e6 } }
+
+/// `1MWh` is one MWh.
+///
+/// ```nabi
+/// assert(2MWh == units::symbols::MWh.of(2.0));
+/// ```
+#[literal(number "MWh")]
+pub const fn megawatt_hours(n: f64) -> pkg::kinds::Energy { Quantity { value: n * 3.6e9 } }
+
+/// `1cal` is one cal.
+///
+/// ```nabi
+/// assert(2cal == units::symbols::cal.of(2.0));
+/// ```
+#[literal(number "cal")]
+pub const fn calories(n: f64) -> pkg::kinds::Energy { Quantity { value: n * 4.184 } }
+
+/// `1kcal` is one kcal.
+///
+/// ```nabi
+/// assert(2kcal == units::symbols::kcal.of(2.0));
+/// ```
+#[literal(number "kcal")]
+pub const fn kilocalories(n: f64) -> pkg::kinds::Energy { Quantity { value: n * 4184.0 } }
+
+/// `1Btu` is one Btu.
+///
+/// ```nabi
+/// assert(2Btu == units::symbols::Btu.of(2.0));
+/// ```
+#[literal(number "Btu")]
+pub const fn btus(n: f64) -> pkg::kinds::Energy { Quantity { value: n * 1055.05585262 } }
+
+/// `1keV` is one keV.
+///
+/// ```nabi
+/// assert(2keV == units::symbols::keV.of(2.0));
+/// ```
+#[literal(number "keV")]
+pub const fn kiloelectronvolts(n: f64) -> pkg::kinds::Energy { Quantity { value: n * 1.602176634e-16 } }
+
+/// `1MeV` is one MeV.
+///
+/// ```nabi
+/// assert(2MeV == units::symbols::MeV.of(2.0));
+/// ```
+#[literal(number "MeV")]
+pub const fn megaelectronvolts(n: f64) -> pkg::kinds::Energy { Quantity { value: n * 1.602176634e-13 } }
+
+/// `1GeV` is one GeV.
+///
+/// ```nabi
+/// assert(2GeV == units::symbols::GeV.of(2.0));
+/// ```
+#[literal(number "GeV")]
+pub const fn gigaelectronvolts(n: f64) -> pkg::kinds::Energy { Quantity { value: n * 1.602176634e-10 } }
+
+/// `1TeV` is one TeV.
+///
+/// ```nabi
+/// assert(2TeV == units::symbols::TeV.of(2.0));
+/// ```
+#[literal(number "TeV")]
+pub const fn teraelectronvolts(n: f64) -> pkg::kinds::Energy { Quantity { value: n * 1.602176634e-7 } }
+
+/// `1W` is one W.
+///
+/// ```nabi
+/// assert(2W == units::symbols::W.of(2.0));
+/// ```
+#[literal(number "W")]
+pub const fn watts(n: f64) -> pkg::kinds::Power { Quantity { value: n } }
+
+/// `1mW` is one mW.
+///
+/// ```nabi
+/// assert(2mW == units::symbols::mW.of(2.0));
+/// ```
+#[literal(number "mW")]
+pub const fn milliwatts(n: f64) -> pkg::kinds::Power { Quantity { value: n / 1e3 } }
+
+/// `1kW` is one kW.
+///
+/// ```nabi
+/// assert(2kW == units::symbols::kW.of(2.0));
+/// ```
+#[literal(number "kW")]
+pub const fn kilowatts(n: f64) -> pkg::kinds::Power { Quantity { value: n * 1e3 } }
+
+/// `1MW` is one MW.
+///
+/// ```nabi
+/// assert(2MW == units::symbols::MW.of(2.0));
+/// ```
+#[literal(number "MW")]
+pub const fn megawatts(n: f64) -> pkg::kinds::Power { Quantity { value: n * 1e6 } }
+
+/// `1GW` is one GW.
+///
+/// ```nabi
+/// assert(2GW == units::symbols::GW.of(2.0));
+/// ```
+#[literal(number "GW")]
+pub const fn gigawatts(n: f64) -> pkg::kinds::Power { Quantity { value: n * 1e9 } }
+
+/// `1hp` is one hp.
+///
+/// ```nabi
+/// assert(2hp == units::symbols::hp.of(2.0));
+/// ```
+#[literal(number "hp")]
+pub const fn horsepower(n: f64) -> pkg::kinds::Power { Quantity { value: n * 745.6998715822702 } }
+
+/// `1Pa` is one Pa.
+///
+/// ```nabi
+/// assert(2Pa == units::symbols::Pa.of(2.0));
+/// ```
+#[literal(number "Pa")]
+pub const fn pascals(n: f64) -> pkg::kinds::Pressure { Quantity { value: n } }
+
+/// `1hPa` is one hPa.
+///
+/// ```nabi
+/// assert(2hPa == units::symbols::hPa.of(2.0));
+/// ```
+#[literal(number "hPa")]
+pub const fn hectopascals(n: f64) -> pkg::kinds::Pressure { Quantity { value: n * 1e2 } }
+
+/// `1kPa` is one kPa.
+///
+/// ```nabi
+/// assert(2kPa == units::symbols::kPa.of(2.0));
+/// ```
+#[literal(number "kPa")]
+pub const fn kilopascals(n: f64) -> pkg::kinds::Pressure { Quantity { value: n * 1e3 } }
+
+/// `1MPa` is one MPa.
+///
+/// ```nabi
+/// assert(2MPa == units::symbols::MPa.of(2.0));
+/// ```
+#[literal(number "MPa")]
+pub const fn megapascals(n: f64) -> pkg::kinds::Pressure { Quantity { value: n * 1e6 } }
+
+/// `1GPa` is one GPa.
+///
+/// ```nabi
+/// assert(2GPa == units::symbols::GPa.of(2.0));
+/// ```
+#[literal(number "GPa")]
+pub const fn gigapascals(n: f64) -> pkg::kinds::Pressure { Quantity { value: n * 1e9 } }
+
+/// `1bar` is one bar.
+///
+/// ```nabi
+/// assert(2bar == units::symbols::bar.of(2.0));
+/// ```
+#[literal(number "bar")]
+pub const fn bars(n: f64) -> pkg::kinds::Pressure { Quantity { value: n * 1e5 } }
+
+/// `1mbar` is one mbar.
+///
+/// ```nabi
+/// assert(2mbar == units::symbols::mbar.of(2.0));
+/// ```
+#[literal(number "mbar")]
+pub const fn millibars(n: f64) -> pkg::kinds::Pressure { Quantity { value: n * 1e2 } }
+
+/// `1atm` is one atm.
+///
+/// ```nabi
+/// assert(2atm == units::symbols::atm.of(2.0));
+/// ```
+#[literal(number "atm")]
+pub const fn atmospheres(n: f64) -> pkg::kinds::Pressure { Quantity { value: n * 101325.0 } }
+
+/// `1psi` is one psi.
+///
+/// ```nabi
+/// assert(2psi == units::symbols::psi.of(2.0));
+/// ```
+#[literal(number "psi")]
+pub const fn psi(n: f64) -> pkg::kinds::Pressure { Quantity { value: n * 6894.757293168361 } }
+
+/// `1Torr` is one Torr.
+///
+/// ```nabi
+/// assert(2Torr == units::symbols::Torr.of(2.0));
+/// ```
+#[literal(number "Torr")]
+pub const fn torrs(n: f64) -> pkg::kinds::Pressure { Quantity { value: n * (101325.0 / 760.0) } }
+
+/// `1mmHg` is one mmHg.
+///
+/// ```nabi
+/// assert(2mmHg == units::symbols::mmHg.of(2.0));
+/// ```
+#[literal(number "mmHg")]
+pub const fn millimetres_of_mercury(n: f64) -> pkg::kinds::Pressure { Quantity { value: n * 133.322387415 } }
+
+/// `1A` is one A.
+///
+/// ```nabi
+/// assert(2A == units::symbols::A.of(2.0));
+/// ```
+#[literal(number "A")]
+pub const fn amperes(n: f64) -> pkg::kinds::Current { Quantity { value: n } }
+
+/// `1mA` is one mA.
+///
+/// ```nabi
+/// assert(2mA == units::symbols::mA.of(2.0));
+/// ```
+#[literal(number "mA")]
+pub const fn milliamperes(n: f64) -> pkg::kinds::Current { Quantity { value: n / 1e3 } }
+
+/// `1μA` is one μA.
+///
+/// ```nabi
+/// assert(2μA == units::symbols::μA.of(2.0));
+/// ```
+#[literal(number "μA")]
+pub const fn microamperes(n: f64) -> pkg::kinds::Current { Quantity { value: n / 1e6 } }
+
+/// `1kA` is one kA.
+///
+/// ```nabi
+/// assert(2kA == units::symbols::kA.of(2.0));
+/// ```
+#[literal(number "kA")]
+pub const fn kiloamperes(n: f64) -> pkg::kinds::Current { Quantity { value: n * 1e3 } }
+
+/// `1V` is one V.
+///
+/// ```nabi
+/// assert(2V == units::symbols::V.of(2.0));
+/// ```
+#[literal(number "V")]
+pub const fn volts(n: f64) -> pkg::kinds::Voltage { Quantity { value: n } }
+
+/// `1mV` is one mV.
+///
+/// ```nabi
+/// assert(2mV == units::symbols::mV.of(2.0));
+/// ```
+#[literal(number "mV")]
+pub const fn millivolts(n: f64) -> pkg::kinds::Voltage { Quantity { value: n / 1e3 } }
+
+/// `1μV` is one μV.
+///
+/// ```nabi
+/// assert(2μV == units::symbols::μV.of(2.0));
+/// ```
+#[literal(number "μV")]
+pub const fn microvolts(n: f64) -> pkg::kinds::Voltage { Quantity { value: n / 1e6 } }
+
+/// `1kV` is one kV.
+///
+/// ```nabi
+/// assert(2kV == units::symbols::kV.of(2.0));
+/// ```
+#[literal(number "kV")]
+pub const fn kilovolts(n: f64) -> pkg::kinds::Voltage { Quantity { value: n * 1e3 } }
+
+/// `1MV` is one MV.
+///
+/// ```nabi
+/// assert(2MV == units::symbols::MV.of(2.0));
+/// ```
+#[literal(number "MV")]
+pub const fn megavolts(n: f64) -> pkg::kinds::Voltage { Quantity { value: n * 1e6 } }
+
+/// `1Ω` is one Ω.
+///
+/// ```nabi
+/// assert(2Ω == units::symbols::Ω.of(2.0));
+/// ```
+#[literal(number "Ω")]
+pub const fn ohms(n: f64) -> pkg::kinds::Resistance { Quantity { value: n } }
+
+/// `1mΩ` is one mΩ.
+///
+/// ```nabi
+/// assert(2mΩ == units::symbols::mΩ.of(2.0));
+/// ```
+#[literal(number "mΩ")]
+pub const fn milliohms(n: f64) -> pkg::kinds::Resistance { Quantity { value: n / 1e3 } }
+
+/// `1kΩ` is one kΩ.
+///
+/// ```nabi
+/// assert(2kΩ == units::symbols::kΩ.of(2.0));
+/// ```
+#[literal(number "kΩ")]
+pub const fn kiloohms(n: f64) -> pkg::kinds::Resistance { Quantity { value: n * 1e3 } }
+
+/// `1MΩ` is one MΩ.
+///
+/// ```nabi
+/// assert(2MΩ == units::symbols::MΩ.of(2.0));
+/// ```
+#[literal(number "MΩ")]
+pub const fn megaohms(n: f64) -> pkg::kinds::Resistance { Quantity { value: n * 1e6 } }
+
+/// `1ohm` is one Ω.
+///
+/// ```nabi
+/// assert(2ohm == units::symbols::ohm.of(2.0));
+/// ```
+#[literal(number "ohm")]
+pub const fn ohms_ascii(n: f64) -> pkg::kinds::Resistance { Quantity { value: n } }
+
+/// `1kohm` is one kΩ.
+///
+/// ```nabi
+/// assert(2kohm == units::symbols::kohm.of(2.0));
+/// ```
+#[literal(number "kohm")]
+pub const fn kiloohms_ascii(n: f64) -> pkg::kinds::Resistance { Quantity { value: n * 1e3 } }
+
+/// `1C` is one C.
+///
+/// ```nabi
+/// assert(2C == units::symbols::C.of(2.0));
+/// ```
+#[literal(number "C")]
+pub const fn coulombs(n: f64) -> pkg::kinds::Charge { Quantity { value: n } }
+
+/// `1mC` is one mC.
+///
+/// ```nabi
+/// assert(2mC == units::symbols::mC.of(2.0));
+/// ```
+#[literal(number "mC")]
+pub const fn millicoulombs(n: f64) -> pkg::kinds::Charge { Quantity { value: n / 1e3 } }
+
+/// `1μC` is one μC.
+///
+/// ```nabi
+/// assert(2μC == units::symbols::μC.of(2.0));
+/// ```
+#[literal(number "μC")]
+pub const fn microcoulombs(n: f64) -> pkg::kinds::Charge { Quantity { value: n / 1e6 } }
+
+/// `1nC` is one nC.
+///
+/// ```nabi
+/// assert(2nC == units::symbols::nC.of(2.0));
+/// ```
+#[literal(number "nC")]
+pub const fn nanocoulombs(n: f64) -> pkg::kinds::Charge { Quantity { value: n / 1e9 } }
+
+/// `1F` is one F.
+///
+/// ```nabi
+/// assert(2F == units::symbols::F.of(2.0));
+/// ```
+#[literal(number "F")]
+pub const fn farads(n: f64) -> pkg::kinds::Capacitance { Quantity { value: n } }
+
+/// `1mF` is one mF.
+///
+/// ```nabi
+/// assert(2mF == units::symbols::mF.of(2.0));
+/// ```
+#[literal(number "mF")]
+pub const fn millifarads(n: f64) -> pkg::kinds::Capacitance { Quantity { value: n / 1e3 } }
+
+/// `1μF` is one μF.
+///
+/// ```nabi
+/// assert(2μF == units::symbols::μF.of(2.0));
+/// ```
+#[literal(number "μF")]
+pub const fn microfarads(n: f64) -> pkg::kinds::Capacitance { Quantity { value: n / 1e6 } }
+
+/// `1uF` is one uF.
+///
+/// ```nabi
+/// assert(2uF == units::symbols::uF.of(2.0));
+/// ```
+#[literal(number "uF")]
+pub const fn microfarads_ascii(n: f64) -> pkg::kinds::Capacitance { Quantity { value: n / 1e6 } }
+
+/// `1nF` is one nF.
+///
+/// ```nabi
+/// assert(2nF == units::symbols::nF.of(2.0));
+/// ```
+#[literal(number "nF")]
+pub const fn nanofarads(n: f64) -> pkg::kinds::Capacitance { Quantity { value: n / 1e9 } }
+
+/// `1pF` is one pF.
+///
+/// ```nabi
+/// assert(2pF == units::symbols::pF.of(2.0));
+/// ```
+#[literal(number "pF")]
+pub const fn picofarads(n: f64) -> pkg::kinds::Capacitance { Quantity { value: n / 1e12 } }
+
+/// `1S` is one S.
+///
+/// ```nabi
+/// assert(2S == units::symbols::S.of(2.0));
+/// ```
+#[literal(number "S")]
+pub const fn siemens(n: f64) -> pkg::kinds::Conductance { Quantity { value: n } }
+
+/// `1mS` is one mS.
+///
+/// ```nabi
+/// assert(2mS == units::symbols::mS.of(2.0));
+/// ```
+#[literal(number "mS")]
+pub const fn millisiemens(n: f64) -> pkg::kinds::Conductance { Quantity { value: n / 1e3 } }
+
+/// `1H` is one H.
+///
+/// ```nabi
+/// assert(2H == units::symbols::H.of(2.0));
+/// ```
+#[literal(number "H")]
+pub const fn henries(n: f64) -> pkg::kinds::Inductance { Quantity { value: n } }
+
+/// `1mH` is one mH.
+///
+/// ```nabi
+/// assert(2mH == units::symbols::mH.of(2.0));
+/// ```
+#[literal(number "mH")]
+pub const fn millihenries(n: f64) -> pkg::kinds::Inductance { Quantity { value: n / 1e3 } }
+
+/// `1μH` is one μH.
+///
+/// ```nabi
+/// assert(2μH == units::symbols::μH.of(2.0));
+/// ```
+#[literal(number "μH")]
+pub const fn microhenries(n: f64) -> pkg::kinds::Inductance { Quantity { value: n / 1e6 } }
+
+/// `1Wb` is one Wb.
+///
+/// ```nabi
+/// assert(2Wb == units::symbols::Wb.of(2.0));
+/// ```
+#[literal(number "Wb")]
+pub const fn webers(n: f64) -> pkg::kinds::MagneticFlux { Quantity { value: n } }
+
+/// `1T` is one T.
+///
+/// ```nabi
+/// assert(2T == units::symbols::T.of(2.0));
+/// ```
+#[literal(number "T")]
+pub const fn teslas(n: f64) -> pkg::kinds::MagneticFluxDensity { Quantity { value: n } }
+
+/// `1mT` is one mT.
+///
+/// ```nabi
+/// assert(2mT == units::symbols::mT.of(2.0));
+/// ```
+#[literal(number "mT")]
+pub const fn milliteslas(n: f64) -> pkg::kinds::MagneticFluxDensity { Quantity { value: n / 1e3 } }
+
+/// `1μT` is one μT.
+///
+/// ```nabi
+/// assert(2μT == units::symbols::μT.of(2.0));
+/// ```
+#[literal(number "μT")]
+pub const fn microteslas(n: f64) -> pkg::kinds::MagneticFluxDensity { Quantity { value: n / 1e6 } }
+
+/// `1gauss` is one gauss.
+///
+/// ```nabi
+/// assert(2gauss == units::symbols::gauss.of(2.0));
+/// ```
+#[literal(number "gauss")]
+pub const fn gauss(n: f64) -> pkg::kinds::MagneticFluxDensity { Quantity { value: n / 1e4 } }
+
+/// `1K` is one K.
+///
+/// ```nabi
+/// assert(2K == units::symbols::K.of(2.0));
+/// ```
+#[literal(number "K")]
+pub const fn kelvins(n: f64) -> pkg::kinds::ThermodynamicTemperature { Quantity { value: n } }
+
+/// `1mK` is one mK.
+///
+/// ```nabi
+/// assert(2mK == units::symbols::mK.of(2.0));
+/// ```
+#[literal(number "mK")]
+pub const fn millikelvins(n: f64) -> pkg::kinds::ThermodynamicTemperature { Quantity { value: n / 1e3 } }
+
+/// `1mol` is one mol.
+///
+/// ```nabi
+/// assert(2mol == units::symbols::mol.of(2.0));
+/// ```
+#[literal(number "mol")]
+pub const fn moles(n: f64) -> pkg::kinds::Amount { Quantity { value: n } }
+
+/// `1mmol` is one mmol.
+///
+/// ```nabi
+/// assert(2mmol == units::symbols::mmol.of(2.0));
+/// ```
+#[literal(number "mmol")]
+pub const fn millimoles(n: f64) -> pkg::kinds::Amount { Quantity { value: n / 1e3 } }
+
+/// `1μmol` is one μmol.
+///
+/// ```nabi
+/// assert(2μmol == units::symbols::μmol.of(2.0));
+/// ```
+#[literal(number "μmol")]
+pub const fn micromoles(n: f64) -> pkg::kinds::Amount { Quantity { value: n / 1e6 } }
+
+/// `1kmol` is one kmol.
+///
+/// ```nabi
+/// assert(2kmol == units::symbols::kmol.of(2.0));
+/// ```
+#[literal(number "kmol")]
+pub const fn kilomoles(n: f64) -> pkg::kinds::Amount { Quantity { value: n * 1e3 } }
+
+/// `1kat` is one kat.
+///
+/// ```nabi
+/// assert(2kat == units::symbols::kat.of(2.0));
+/// ```
+#[literal(number "kat")]
+pub const fn katals(n: f64) -> pkg::kinds::CatalyticActivity { Quantity { value: n } }
+
+/// `1cd` is one cd.
+///
+/// ```nabi
+/// assert(2cd == units::symbols::cd.of(2.0));
+/// ```
+#[literal(number "cd")]
+pub const fn candelas(n: f64) -> pkg::kinds::LuminousIntensity { Quantity { value: n } }
+
+/// `1lm` is one lm.
+///
+/// ```nabi
+/// assert(2lm == units::symbols::lm.of(2.0));
+/// ```
+#[literal(number "lm")]
+pub const fn lumens(n: f64) -> pkg::kinds::LuminousIntensity { Quantity { value: n } }
+
+/// `1lx` is one lx.
+///
+/// ```nabi
+/// assert(2lx == units::symbols::lx.of(2.0));
+/// ```
+#[literal(number "lx")]
+pub const fn lux(n: f64) -> pkg::kinds::Illuminance { Quantity { value: n } }
+
+/// `1Gy` is one Gy.
+///
+/// ```nabi
+/// assert(2Gy == units::symbols::Gy.of(2.0));
+/// ```
+#[literal(number "Gy")]
+pub const fn grays(n: f64) -> pkg::kinds::AbsorbedDose { Quantity { value: n } }
+
+/// `1Sv` is one Sv.
+///
+/// ```nabi
+/// assert(2Sv == units::symbols::Sv.of(2.0));
+/// ```
+#[literal(number "Sv")]
+pub const fn sieverts(n: f64) -> pkg::kinds::AbsorbedDose { Quantity { value: n } }
+
+/// `1mSv` is one mSv.
+///
+/// ```nabi
+/// assert(2mSv == units::symbols::mSv.of(2.0));
+/// ```
+#[literal(number "mSv")]
+pub const fn millisieverts(n: f64) -> pkg::kinds::AbsorbedDose { Quantity { value: n / 1e3 } }
+
+/// `1rad` is one rad.
+///
+/// ```nabi
+/// assert(2rad == units::symbols::rad.of(2.0));
+/// ```
+#[literal(number "rad")]
+pub const fn radians(n: f64) -> pkg::kinds::Dimensionless { Quantity { value: n } }
+
+/// `1mrad` is one mrad.
+///
+/// ```nabi
+/// assert(2mrad == units::symbols::mrad.of(2.0));
+/// ```
+#[literal(number "mrad")]
+pub const fn milliradians(n: f64) -> pkg::kinds::Dimensionless { Quantity { value: n / 1e3 } }
+
+/// `1deg` is one °.
+///
+/// ```nabi
+/// assert(2deg == units::symbols::deg.of(2.0));
+/// ```
+#[literal(number "deg")]
+pub const fn degrees(n: f64) -> pkg::kinds::Dimensionless { Quantity { value: n * (f64::PI / 180.0) } }
+
+/// `1arcmin` is one ′.
+///
+/// ```nabi
+/// assert(2arcmin == units::symbols::arcmin.of(2.0));
+/// ```
+#[literal(number "arcmin")]
+pub const fn arcminutes(n: f64) -> pkg::kinds::Dimensionless { Quantity { value: n * (f64::PI / 10800.0) } }
+
+/// `1arcsec` is one ″.
+///
+/// ```nabi
+/// assert(2arcsec == units::symbols::arcsec.of(2.0));
+/// ```
+#[literal(number "arcsec")]
+pub const fn arcseconds(n: f64) -> pkg::kinds::Dimensionless { Quantity { value: n * (f64::PI / 648000.0) } }
+
+/// `1sr` is one sr.
+///
+/// ```nabi
+/// assert(2sr == units::symbols::sr.of(2.0));
+/// ```
+#[literal(number "sr")]
+pub const fn steradians(n: f64) -> pkg::kinds::Dimensionless { Quantity { value: n } }
+
+/// `1turn` is one turn.
+///
+/// ```nabi
+/// assert(2turn == units::symbols::turn.of(2.0));
+/// ```
+#[literal(number "turn")]
+pub const fn turns(n: f64) -> pkg::kinds::Dimensionless { Quantity { value: n * (2.0 * f64::PI) } }
+
+/// `1percent` is one %.
+///
+/// ```nabi
+/// assert(2percent == units::symbols::percent.of(2.0));
+/// ```
+#[literal(number "percent")]
+pub const fn percent(n: f64) -> pkg::kinds::Dimensionless { Quantity { value: n / 1e2 } }
+
+/// `1ppm` is one ppm.
+///
+/// ```nabi
+/// assert(2ppm == units::symbols::ppm.of(2.0));
+/// ```
+#[literal(number "ppm")]
+pub const fn parts_per_million(n: f64) -> pkg::kinds::Dimensionless { Quantity { value: n / 1e6 } }
+
+/// `20degC`: a temperature reading on that scale.
+///
+/// ```nabi
+/// assert(20degC == units::Temperature::from_celsius(20.0));
+/// ```
+#[literal(number "degC")]
+pub const fn degrees_celsius(n: f64) -> Temperature { Temperature { value: n, scale: Scale::Celsius } }
+
+/// `20degF`: a temperature reading on that scale.
+///
+/// ```nabi
+/// assert(20degF == units::Temperature::from_fahrenheit(20.0));
+/// ```
+#[literal(number "degF")]
+pub const fn degrees_fahrenheit(n: f64) -> Temperature { Temperature { value: n, scale: Scale::Fahrenheit } }
+
+/// `20degR`: a temperature reading on that scale.
+///
+/// ```nabi
+/// assert(20degR == units::Temperature::from_rankine(20.0));
+/// ```
+#[literal(number "degR")]
+pub const fn degrees_rankine(n: f64) -> Temperature { Temperature { value: n, scale: Scale::Rankine } }

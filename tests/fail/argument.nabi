@@ -1,0 +1,9 @@
+// expect: mismatched types
+// An energy passed for a force (newton-metres are not newtons).
+use units::kinds::Force;
+
+fn weight(f: Force) -> f64 { f.value }
+
+fn main() {
+    println(weight(2N * 1m));
+}

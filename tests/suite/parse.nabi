@@ -1,0 +1,75 @@
+// Parsing: grammar, spellings, and round trips of printed units.
+
+use pkg::tests::suite::{expect, rel};
+use pkg::unit::catalogue;
+use pkg::{Dim, DynUnit, Measure};
+use std::random::{Rng, Xoshiro256PlusPlus};
+
+#[test]
+fn grammar() {
+    let n = Dim::MASS * Dim::LENGTH / Dim::TIME.pow(2);
+    for text in ["kg*m/s^2", "kg·m/s²", "kg m s^-2", "kg m s-2", "kg*m*s**-2", "kg m/s/s", "(kg*m)/(s*s)", "kg⋅m⋅s⁻²", " N ", "newton", "newtons", "kilogram*metre/second^2"] {
+        let u = try! DynUnit::parse(text);
+        expect(u.dim == n, f"`{text}` is a force");
+        rel(u.scale, 1.0, 1e-15, text);
+    }
+    expect((try! DynUnit::parse("1/s")).dim == Dim::TIME.pow(-1), "1/s");
+    expect((try! DynUnit::parse("m2")).dim == Dim::LENGTH.pow(2), "glued power");
+    expect((try! DynUnit::parse("J/kg/K")).dim == (try! DynUnit::parse("J/(kg*K)")).dim, "/ binds the next power");
+    expect((try! DynUnit::parse("1")).dim.is_none(), "1");
+    expect((try! DynUnit::parse("%")).scale == 0.01, "percent");
+    expect((try! DynUnit::parse("kilometres")).scale == 1000.0, "prefixed plural");
+    expect((try! DynUnit::parse("meters")).scale == 1.0, "US spelling");
+    expect((try! DynUnit::parse("Ω")).dim == (try! DynUnit::parse("ohm")).dim, "ohm sign and name");
+    expect((try! DynUnit::parse("kΩ")).scale == 1000.0, "kilo-ohm");
+}
+
+// Every catalogue symbol, name and plural parses to its own unit.
+#[test]
+fn catalogue_round_trip() {
+    for e in catalogue::entries() {
+        for text in [e.symbol, e.name, e.plural] {
+            let u = try! DynUnit::parse(text);
+            expect(u.dim == e.dim && u.scale == e.scale && u.offset == e.offset, f"`{text}`");
+        }
+    }
+}
+
+// A printed coherent unit parses back to its dimension, in Unicode and
+// ASCII.
+#[test]
+fn printed_round_trip() {
+    let g = Xoshiro256PlusPlus::seed(3);
+    for _ in 0..300 {
+        let e: [i8; 7] = [0; 7];
+        for k in 0..7 { e[k] = (g.below(9u64) as i8) - 4; }
+        let d = Dim::of(e);
+        if d.is_none() { continue; }
+        for text in [d.symbol(), d.ascii(), d.base_symbol()] {
+            let u = try! DynUnit::parse(text);
+            expect(u.dim == d, f"`{text}` -> {u.dim} for {d}");
+            rel(u.scale, 1.0, 1e-15, text);
+        }
+    }
+}
+
+#[test]
+fn measures() {
+    let m = try! Measure::parse("9.81 m/s^2");
+    expect(m.value == 9.81 && m.dim().name() == "acceleration", "acceleration");
+    expect((try! Measure::parse("-1.5e3 J")).value == -1500.0, "exponent");
+    expect((try! Measure::parse("5km")).si() == 5000.0, "no space");
+    expect((try! Measure::parse("2eV")).si() == 2.0 * 1.602176634e-19, "a number then eV");
+    expect((try! Measure::parse("3")).dim().is_none(), "bare number");
+    expect((try! Measure::parse("h")).si() == 3600.0, "bare unit");
+    // Printing then parsing gives the same measure.
+    let g = Xoshiro256PlusPlus::seed(5);
+    for _ in 0..200 {
+        let v = g.uniform(-1e6, 1e6);
+        for u in ["km/h", "kg*m/s^2", "µs", "kWh", "psi", "°F"] {
+            let a = Measure::new(v, try! DynUnit::parse(u));
+            let b = try! Measure::parse(f"{a}");
+            expect(b.value == a.value && b.unit.dim == a.unit.dim && b.unit.scale == a.unit.scale, f"`{a}`");
+        }
+    }
+}

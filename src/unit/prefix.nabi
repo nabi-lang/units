@@ -1,0 +1,109 @@
+//! SI prefixes, quecto (1e-30) to quetta (1e30).
+
+/// An SI prefix: its symbol, name and power of ten.
+///
+/// ```nabi
+/// use units::unit::prefix::Prefix;
+///
+/// let k = Prefix::find("k") ?? panic("k");
+/// assert(k.name == "kilo" && k.power == 3);
+/// ```
+#[derive(Clone, Copy, PartialEq, Debug)]
+pub struct Prefix {
+    /// The symbol (`"k"`, `"µ"`).
+    pub symbol: str;
+    /// The name (`"kilo"`).
+    pub name: str;
+    /// The power of ten (`3`).
+    pub power: i32;
+}
+
+// Two-letter `da` before one-letter `d`, so the longest symbol wins.
+const PREFIXES: [Prefix; 24] = [
+    Prefix { symbol: "da", name: "deca", power: 1 },
+    Prefix { symbol: "Q", name: "quetta", power: 30 },
+    Prefix { symbol: "R", name: "ronna", power: 27 },
+    Prefix { symbol: "Y", name: "yotta", power: 24 },
+    Prefix { symbol: "Z", name: "zetta", power: 21 },
+    Prefix { symbol: "E", name: "exa", power: 18 },
+    Prefix { symbol: "P", name: "peta", power: 15 },
+    Prefix { symbol: "T", name: "tera", power: 12 },
+    Prefix { symbol: "G", name: "giga", power: 9 },
+    Prefix { symbol: "M", name: "mega", power: 6 },
+    Prefix { symbol: "k", name: "kilo", power: 3 },
+    Prefix { symbol: "h", name: "hecto", power: 2 },
+    Prefix { symbol: "d", name: "deci", power: -1 },
+    Prefix { symbol: "c", name: "centi", power: -2 },
+    Prefix { symbol: "m", name: "milli", power: -3 },
+    Prefix { symbol: "µ", name: "micro", power: -6 },
+    Prefix { symbol: "n", name: "nano", power: -9 },
+    Prefix { symbol: "p", name: "pico", power: -12 },
+    Prefix { symbol: "f", name: "femto", power: -15 },
+    Prefix { symbol: "a", name: "atto", power: -18 },
+    Prefix { symbol: "z", name: "zepto", power: -21 },
+    Prefix { symbol: "y", name: "yocto", power: -24 },
+    Prefix { symbol: "r", name: "ronto", power: -27 },
+    Prefix { symbol: "q", name: "quecto", power: -30 },
+];
+
+impl Prefix {
+    /// Every prefix, the two-letter `da` first.
+    ///
+    /// ```nabi
+    /// use units::unit::prefix::Prefix;
+    ///
+    /// assert(Prefix::all().len() == 24);
+    /// ```
+    pub fn all() -> List<Prefix> {
+        let out: List<Prefix> = List::with_capacity(24);
+        for p in PREFIXES { out.push(p); }
+        out
+    }
+
+    /// The prefix with symbol or name `text`. The micro sign `µ`
+    /// (U+00B5), the Greek `μ` (U+03BC) and ASCII `u` all give micro.
+    ///
+    /// ```nabi
+    /// use units::unit::prefix::Prefix;
+    ///
+    /// assert((Prefix::find("μ") ?? panic("mu")).power == -6);
+    /// assert((Prefix::find("mega") ?? panic("mega")).symbol == "M");
+    /// ```
+    pub fn find(text: str) -> Prefix | none {
+        let t = if text == "μ" || text == "u" { "µ" } else { text };
+        for p in PREFIXES {
+            if p.symbol == t || p.name == t { return p; }
+        }
+        none
+    }
+
+    /// `10^power`, the double nearest it for every prefix.
+    ///
+    /// ```nabi
+    /// use units::unit::prefix::Prefix;
+    ///
+    /// assert((Prefix::find("n") ?? panic("n")).factor() == 1e-9);
+    /// ```
+    pub fn factor(self) -> f64 { scaled(1.0, self.power) }
+}
+
+// `x * 10^p`, dividing for negative powers: `1 / 1e3` rounds to the
+// double nearest 0.001, `1 * 1e-3` (1e-3 being inexact) need not.
+pub(pkg) fn scaled(x: f64, p: i32) -> f64 {
+    if p >= 0 { x * 10.0.powi(p) } else { x / 10.0.powi(-p) }
+}
+
+// Each way to read `word` as prefix + rest, and whether the prefix was
+// written as a name (`kilo`) rather than a symbol (`k`); the other micro
+// spellings too.
+pub(pkg) fn split(word: str) -> List<(Prefix, str, bool)> {
+    let out: List<(Prefix, str, bool)> = [];
+    for p in PREFIXES {
+        if let rest: str = word.strip_prefix(p.symbol) { if rest != "" { out.push((p, rest, false)); } }
+        if let rest: str = word.strip_prefix(p.name) { if rest != "" { out.push((p, rest, true)); } }
+    }
+    for mu in ["μ", "u"] {
+        if let rest: str = word.strip_prefix(mu) { if rest != "" { out.push((PREFIXES[15], rest, false)); } }
+    }
+    out
+}

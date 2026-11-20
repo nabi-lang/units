@@ -1,0 +1,5 @@
+// expect: operator `<` cannot be applied
+// Comparing a mass with a length.
+fn main() {
+    println(1kg < 1m);
+}

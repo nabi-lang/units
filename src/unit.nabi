@@ -1,0 +1,362 @@
+//! Units: the static `Unit` of a known dimension (the symbols, what
+//! `.to` and `.value_in` take) and the dynamic `DynUnit` that parsing
+//! and unit algebra with run-time exponents give.
+
+pub mod catalogue;
+pub mod prefix;
+
+mod parse;
+
+use pkg::{Dim, Quantity, UnitError};
+use core::array::Array;
+
+/// A unit of a dimension fixed in its type: a symbol and the size of
+/// one of it in coherent SI units (`km` is 1000 m). The dimension
+/// parameters are those of `Quantity`. `*` and `/` combine units into
+/// new ones with the right dimension; `u ** n` gives a `DynUnit`, since
+/// `n` is a value (use `u.squared()`, `u.powi::<n>()`, or the symbols
+/// `m²`, `s²` to stay static).
+///
+/// ```nabi
+/// use units::symbols::{km, h, kg, m, s²};
+///
+/// let kmh = km / h;
+/// assert(kmh.symbol() == "km/h");
+/// assert(kmh.of(36.0) == 10m / 1s);
+/// let newton = kg * m / s²;
+/// assert(newton.dim().symbol() == "N");
+/// ```
+#[derive(Clone, PartialEq, Debug)]
+pub struct Unit<const L: i32, const M: i32, const T: i32, const I: i32, const K: i32, const N: i32, const J: i32> {
+    symbol: str;
+    scale: f64;
+}
+
+impl<const L: i32, const M: i32, const T: i32, const I: i32, const K: i32, const N: i32, const J: i32> Unit<L, M, T, I, K, N, J> {
+    /// A unit with `symbol` worth `scale` coherent SI units; the
+    /// dimension comes from the expected type.
+    ///
+    /// ```nabi
+    /// use units::Unit;
+    ///
+    /// let furlong: Unit<1, 0, 0, 0, 0, 0, 0> = Unit::new("fur", 201.168);
+    /// assert(furlong.of(1.0) == 201.168m);
+    /// ```
+    pub const fn new(symbol: str, scale: f64) -> Unit<L, M, T, I, K, N, J> { Unit { symbol: symbol, scale: scale } }
+
+    /// A unit named `symbol` the size of `q`, which also gives the
+    /// dimension.
+    ///
+    /// ```nabi
+    /// use units::Unit;
+    ///
+    /// let furlong = Unit::of_quantity("fur", 220yd);
+    /// assert(furlong.of(8.0).approx_eq(1mi));
+    /// ```
+    pub const fn of_quantity(symbol: str, q: Quantity<f64, L, M, T, I, K, N, J>) -> Unit<L, M, T, I, K, N, J> { Unit { symbol: symbol, scale: q.value } }
+
+    /// The symbol (`"km/h"`).
+    ///
+    /// ```nabi
+    /// use units::symbols::kPa;
+    ///
+    /// assert(kPa.symbol() == "kPa");
+    /// ```
+    pub const fn symbol(self) -> str { self.symbol }
+
+    /// One of this unit in coherent SI units.
+    ///
+    /// ```nabi
+    /// use units::symbols::inch;
+    ///
+    /// assert(inch.scale() == 0.0254);
+    /// ```
+    pub const fn scale(self) -> f64 { self.scale }
+
+    /// The dimension, as a value.
+    ///
+    /// ```nabi
+    /// use units::symbols::J;
+    ///
+    /// assert(J.dim().name() == "energy");
+    /// ```
+    pub const fn dim(self) -> Dim { Dim::of([L as i8, M as i8, T as i8, I as i8, K as i8, N as i8, J as i8]) }
+
+    /// `value` of this unit, as a quantity: `km.of(3.0)` is `3km`.
+    ///
+    /// ```nabi
+    /// use units::symbols::km;
+    ///
+    /// assert(km.of(3.0) == 3000m);
+    /// ```
+    pub const fn of(self, value: f64) -> Quantity<f64, L, M, T, I, K, N, J> { Quantity { value: value * self.scale } }
+
+    /// Each element of `values`, given in this unit, as one array
+    /// quantity.
+    ///
+    /// ```nabi
+    /// use core::array::Array;
+    /// use units::symbols::km;
+    ///
+    /// let d = km.array(Array::from_list([1.0, 2.5], [2]));
+    /// assert(d.at([1]) == 2.5km);
+    /// ```
+    pub fn array<const R: usize>(self, values: Array<f64, R>) -> Quantity<Array<f64, R>, L, M, T, I, K, N, J> { Quantity { value: values .* self.scale } }
+
+    /// The same unit with its dimension as a value.
+    ///
+    /// ```nabi
+    /// use units::symbols::mph;
+    ///
+    /// assert(mph.dynamic().dim.name() == "velocity");
+    /// ```
+    pub fn dynamic(self) -> DynUnit { DynUnit { symbol: self.symbol, scale: self.scale, offset: 0.0, dim: self.dim() } }
+
+    /// The unit renamed: `(kg * m / s²).named("N")`.
+    ///
+    /// ```nabi
+    /// use units::symbols::{kg, m, s²};
+    ///
+    /// assert((kg * m / s²).named("N").symbol() == "N");
+    /// ```
+    pub fn named(self, symbol: str) -> Unit<L, M, T, I, K, N, J> { Unit { symbol: symbol, scale: self.scale } }
+
+    /// The square of the unit (`cm.squared()` is `cm²`).
+    ///
+    /// ```nabi
+    /// use units::symbols::cm;
+    ///
+    /// assert(cm.squared().symbol() == "cm²");
+    /// ```
+    pub fn squared(self) -> Unit<{ 2 * L }, { 2 * M }, { 2 * T }, { 2 * I }, { 2 * K }, { 2 * N }, { 2 * J }> { Unit { symbol: power_symbol(self.symbol, 2), scale: self.scale * self.scale } }
+
+    /// The cube of the unit (`cm.cubed()` is `cm³`).
+    ///
+    /// ```nabi
+    /// use units::symbols::{cm, mL};
+    ///
+    /// assert((cm.cubed().scale() - mL.scale()).abs() < 1e-21);
+    /// ```
+    pub fn cubed(self) -> Unit<{ 3 * L }, { 3 * M }, { 3 * T }, { 3 * I }, { 3 * K }, { 3 * N }, { 3 * J }> { Unit { symbol: power_symbol(self.symbol, 3), scale: self.scale * self.scale * self.scale } }
+
+    /// The reciprocal unit (`s.inv()` is `1/s`).
+    ///
+    /// ```nabi
+    /// use units::symbols::min;
+    ///
+    /// assert(min.inv().of(60.0).value == 1.0);
+    /// ```
+    pub fn inv(self) -> Unit<{ -L }, { -M }, { -T }, { -I }, { -K }, { -N }, { -J }> { Unit { symbol: f"1/{group(self.symbol)}", scale: 1.0 / self.scale } }
+
+    /// The unit to the const power `P`.
+    ///
+    /// ```nabi
+    /// use units::symbols::mm;
+    ///
+    /// assert(mm.powi::<3>().symbol() == "mm³");
+    /// ```
+    pub fn powi<const P: i32>(self) -> Unit<{ L * P }, { M * P }, { T * P }, { I * P }, { K * P }, { N * P }, { J * P }> { Unit { symbol: power_symbol(self.symbol, P), scale: self.scale.powi(P) } }
+}
+
+/// The symbol.
+impl<const L: i32, const M: i32, const T: i32, const I: i32, const K: i32, const N: i32, const J: i32> Display for Unit<L, M, T, I, K, N, J> {
+    fn fmt(self, ref f: Formatter) throws (FmtError) { try f.pad(self.symbol) }
+}
+
+impl<const L: i32, const M: i32, const T: i32, const I: i32, const K: i32, const N: i32, const J: i32, const L2: i32, const M2: i32, const T2: i32, const I2: i32, const K2: i32, const N2: i32, const J2: i32> ops::Mul<Unit<L2, M2, T2, I2, K2, N2, J2>> for Unit<L, M, T, I, K, N, J> {
+    type Output = Unit<{ L + L2 }, { M + M2 }, { T + T2 }, { I + I2 }, { K + K2 }, { N + N2 }, { J + J2 }>;
+    fn mul(self, rhs: Unit<L2, M2, T2, I2, K2, N2, J2>) -> Unit<{ L + L2 }, { M + M2 }, { T + T2 }, { I + I2 }, { K + K2 }, { N + N2 }, { J + J2 }> { Unit { symbol: product_symbol(self.symbol, rhs.symbol), scale: self.scale * rhs.scale } }
+}
+
+impl<const L: i32, const M: i32, const T: i32, const I: i32, const K: i32, const N: i32, const J: i32, const L2: i32, const M2: i32, const T2: i32, const I2: i32, const K2: i32, const N2: i32, const J2: i32> ops::Div<Unit<L2, M2, T2, I2, K2, N2, J2>> for Unit<L, M, T, I, K, N, J> {
+    type Output = Unit<{ L - L2 }, { M - M2 }, { T - T2 }, { I - I2 }, { K - K2 }, { N - N2 }, { J - J2 }>;
+    fn div(self, rhs: Unit<L2, M2, T2, I2, K2, N2, J2>) -> Unit<{ L - L2 }, { M - M2 }, { T - T2 }, { I - I2 }, { K - K2 }, { N - N2 }, { J - J2 }> { Unit { symbol: quotient_symbol(self.symbol, rhs.symbol), scale: self.scale / rhs.scale } }
+}
+
+impl<const L: i32, const M: i32, const T: i32, const I: i32, const K: i32, const N: i32, const J: i32> ops::Mul<DynUnit> for Unit<L, M, T, I, K, N, J> {
+    type Output = DynUnit;
+    fn mul(self, rhs: DynUnit) -> DynUnit { self.dynamic() * rhs }
+}
+
+impl<const L: i32, const M: i32, const T: i32, const I: i32, const K: i32, const N: i32, const J: i32> ops::Div<DynUnit> for Unit<L, M, T, I, K, N, J> {
+    type Output = DynUnit;
+    fn div(self, rhs: DynUnit) -> DynUnit { self.dynamic() / rhs }
+}
+
+impl<const L: i32, const M: i32, const T: i32, const I: i32, const K: i32, const N: i32, const J: i32> ops::Mul<Unit<L, M, T, I, K, N, J>> for DynUnit {
+    type Output = DynUnit;
+    fn mul(self, rhs: Unit<L, M, T, I, K, N, J>) -> DynUnit { self * rhs.dynamic() }
+}
+
+impl<const L: i32, const M: i32, const T: i32, const I: i32, const K: i32, const N: i32, const J: i32> ops::Div<Unit<L, M, T, I, K, N, J>> for DynUnit {
+    type Output = DynUnit;
+    fn div(self, rhs: Unit<L, M, T, I, K, N, J>) -> DynUnit { self / rhs.dynamic() }
+}
+
+impl<const L: i32, const M: i32, const T: i32, const I: i32, const K: i32, const N: i32, const J: i32> ops::Pow<i32> for Unit<L, M, T, I, K, N, J> {
+    type Output = DynUnit;
+    fn pow(self, n: i32) -> DynUnit { self.dynamic() ** n }
+}
+
+/// A unit whose dimension is a value: what `DynUnit::parse` returns and
+/// `Measure` carries. `offset` is nonzero only for the temperature
+/// scales (`degC`, `degF`): a value `v` of the unit is `v * scale +
+/// offset` in SI. In a product or quotient an offset unit stands for its
+/// interval (`J/(kg*degC)` is `J/(kg*K)`).
+///
+/// ```nabi
+/// use units::DynUnit;
+///
+/// let u = try! DynUnit::parse("kg*m/s^2");
+/// assert(u.dim.symbol() == "N" && u.scale == 1.0);
+/// let p = try! DynUnit::parse("psi");
+/// assert((p.scale - 6894.757293168361).abs() < 1e-9);
+/// ```
+#[derive(Clone, PartialEq, Debug)]
+pub struct DynUnit {
+    /// The symbol as written or composed (`"km/h"`).
+    pub symbol: str;
+    /// One of the unit in coherent SI units.
+    pub scale: f64;
+    /// The SI value of zero of the unit (273.15 for `degC`).
+    pub offset: f64;
+    /// The dimension.
+    pub dim: Dim;
+}
+
+impl DynUnit {
+    /// Parse a unit expression: symbols or names with SI prefixes
+    /// (`km`, `µs`, `kilometre`), `*`, `·`, ` ` or `/` between them,
+    /// powers as `^2`, `**2`, `²`, `⁻¹` or a trailing digit (`m2`),
+    /// parentheses, and `1/` (`1/s`). Throws a `UnitError` that points
+    /// at the bad part and suggests a known unit.
+    ///
+    /// ```nabi
+    /// use units::DynUnit;
+    ///
+    /// assert((try! DynUnit::parse("J/(mol·K)")).dim.name() == none);
+    /// assert((try! DynUnit::parse("µm")).scale == 1e-6);
+    /// assert((try! DynUnit::parse("km/h")).scale == 1.0 / 3.6);
+    /// ```
+    pub fn parse(text: str) throws (UnitError) -> DynUnit { try pkg::unit::parse::unit(text) }
+
+    /// The coherent SI unit of `dim` (scale 1), printed with named
+    /// derived units.
+    ///
+    /// ```nabi
+    /// use units::{Dim, DynUnit};
+    ///
+    /// assert(DynUnit::coherent(Dim::LENGTH * Dim::MASS / Dim::TIME.pow(2)).symbol == "N");
+    /// ```
+    pub fn coherent(dim: Dim) -> DynUnit { DynUnit { symbol: dim.symbol(), scale: 1.0, offset: 0.0, dim: dim } }
+
+    /// The SI value of `v` of this unit.
+    ///
+    /// ```nabi
+    /// use units::DynUnit;
+    ///
+    /// assert((try! DynUnit::parse("degC")).to_si(25.0) == 298.15);
+    /// ```
+    pub fn to_si(self, v: f64) -> f64 { v * self.scale + self.offset }
+
+    /// The value in this unit of the SI value `si`.
+    ///
+    /// ```nabi
+    /// use units::DynUnit;
+    ///
+    /// assert(((try! DynUnit::parse("degF")).from_si(273.15) - 32.0).abs() < 1e-12);
+    /// ```
+    pub fn from_si(self, si: f64) -> f64 { (si - self.offset) / self.scale }
+
+    /// The unit as an interval: the same scale with no offset (`degC`
+    /// becomes a kelvin-sized step).
+    ///
+    /// ```nabi
+    /// use units::DynUnit;
+    ///
+    /// assert((try! DynUnit::parse("degC")).interval().offset == 0.0);
+    /// ```
+    pub fn interval(self) -> DynUnit { DynUnit { symbol: self.symbol, scale: self.scale, offset: 0.0, dim: self.dim } }
+
+    /// The static unit of this one, its dimension given by the expected
+    /// type; throws a `UnitError::Mismatch` when the dimensions differ
+    /// (and for an offset unit, which has no static form).
+    ///
+    /// ```nabi
+    /// use units::{DynUnit, Unit};
+    /// use units::kinds::Velocity;
+    ///
+    /// let kn: Unit<1, 0, -1, 0, 0, 0, 0> = try! (try! DynUnit::parse("knot")).fixed();
+    /// assert(kn.of(1.0).approx_eq(1852m / 3600s));
+    /// ```
+    pub fn fixed<const L: i32, const M: i32, const T: i32, const I: i32, const K: i32, const N: i32, const J: i32>(self) throws (UnitError) -> Unit<L, M, T, I, K, N, J> {
+        let want = Dim::of([L as i8, M as i8, T as i8, I as i8, K as i8, N as i8, J as i8]);
+        if self.dim != want { throw UnitError::mismatch("convert", self.dim, want); }
+        if self.offset != 0.0 {
+            throw UnitError::Value { what: f"unit `{self.symbol}`", got: self.symbol, need: "a unit without an offset; temperature scales go through `Temperature`" };
+        }
+        Unit { symbol: self.symbol, scale: self.scale }
+    }
+
+    /// The unit renamed.
+    ///
+    /// ```nabi
+    /// use units::DynUnit;
+    ///
+    /// assert((try! DynUnit::parse("kg*m/s^2")).named("N").symbol == "N");
+    /// ```
+    pub fn named(self, symbol: str) -> DynUnit { DynUnit { symbol: symbol, scale: self.scale, offset: self.offset, dim: self.dim } }
+}
+
+/// The symbol.
+impl Display for DynUnit {
+    fn fmt(self, ref f: Formatter) throws (FmtError) { try f.pad(self.symbol) }
+}
+
+impl ops::Mul for DynUnit {
+    type Output = DynUnit;
+    fn mul(self, rhs: DynUnit) -> DynUnit {
+        DynUnit { symbol: product_symbol(self.symbol, rhs.symbol), scale: self.scale * rhs.scale, offset: 0.0, dim: self.dim * rhs.dim }
+    }
+}
+
+impl ops::Div for DynUnit {
+    type Output = DynUnit;
+    fn div(self, rhs: DynUnit) -> DynUnit {
+        DynUnit { symbol: quotient_symbol(self.symbol, rhs.symbol), scale: self.scale / rhs.scale, offset: 0.0, dim: self.dim / rhs.dim }
+    }
+}
+
+impl ops::Pow<i32> for DynUnit {
+    type Output = DynUnit;
+    fn pow(self, n: i32) -> DynUnit {
+        DynUnit { symbol: power_symbol(self.symbol, n), scale: self.scale.powi(n), offset: 0.0, dim: self.dim.pow(n) }
+    }
+}
+
+// A compound symbol in parentheses, so a power or a divisor applies to
+// all of it.
+fn group(s: str) -> str {
+    if s.contains("·") || s.contains("/") || s.contains("*") { f"({s})" } else { s }
+}
+
+pub(pkg) fn product_symbol(a: str, b: str) -> str {
+    let r = if b.contains("/") { f"({b})" } else { b };
+    if a.contains("/") { f"({a})·{r}" } else { f"{a}·{r}" }
+}
+
+pub(pkg) fn quotient_symbol(a: str, b: str) -> str {
+    let l = if a.contains("/") { f"({a})" } else { a };
+    f"{l}/{group(b)}"
+}
+
+pub(pkg) fn power_symbol(s: str, n: i32) -> str {
+    if n == 1 { return s; }
+    let sup = ["⁰", "¹", "²", "³", "⁴", "⁵", "⁶", "⁷", "⁸", "⁹"];
+    let t = group(s);
+    if n < 0 { t = t + "⁻"; }
+    for c in f"{n.abs()}".chars() {
+        t = t + sup[(c as u32 - '0' as u32) as usize];
+    }
+    t
+}

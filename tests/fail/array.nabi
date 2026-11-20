@@ -1,0 +1,10 @@
+// expect: cannot be applied
+// Broadcast addition of lengths and times.
+use core::array::Array;
+use units::symbols::{m, s};
+
+fn main() {
+    let d = m.array(Array::from_list([1.0, 2.0], [2]));
+    let t = s.array(Array::from_list([1.0, 2.0], [2]));
+    println((d .+ t).len());
+}

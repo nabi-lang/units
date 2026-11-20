@@ -1,0 +1,82 @@
+// Quantities over arrays: broadcast operators with checked dimensions.
+
+use pkg::Quantity;
+use pkg::kinds::{Frequency, Length, Time, Velocity};
+use pkg::symbols::{cm, km, m, s};
+use pkg::tests::suite::{expect, rel};
+use core::array::Array;
+use core::num::Complex;
+
+fn speeds(d: Length<Array<f64, 1>>, t: Time<Array<f64, 1>>) -> Velocity<Array<f64, 1>> { d ./ t }
+
+#[test]
+fn broadcast() {
+    let d = km.array(Array::from_list([1.0, 2.0, 3.0], [3]));
+    let t = s.array(Array::from_list([100.0, 200.0, 400.0], [3]));
+    let v = speeds(d, t);
+    expect(v.values_in(m / s).to_list() == [10.0, 10.0, 7.5], "elementwise quotient");
+    expect(v.at([2]) == 7.5m / 1s, "at");
+    let a = d .* d;
+    expect(a.dim().exponents() == [2, 0, 0, 0, 0, 0, 0], "elementwise square");
+    expect((d .* 2.0).values_in(km).to_list() == [2.0, 4.0, 6.0], "times a number");
+    expect((d ./ 2s).at([0]) == 500m / 1s, "by a scalar quantity");
+    expect(((d ./ t) .* 2s).at([0]) == 20m, "times a scalar quantity");
+    expect((d .+ d).sum() == 12km, "sum");
+    expect((d .- 1km).values_in(km).to_list() == [0.0, 1.0, 2.0], "minus a scalar quantity");
+    expect((4km .- d).values_in(km).to_list() == [3.0, 2.0, 1.0] && (1km .+ d).values_in(km).to_list() == [2.0, 3.0, 4.0], "a scalar quantity on the left");
+    expect((2.0 .* d).values_in(km).to_list() == [2.0, 4.0, 6.0], "a number on the left");
+    expect((2s .* v).at([0]) == 20m && (100m ./ v).at([1]) == 10s, "a scalar quantity on the left of .* and ./");
+    let f: Frequency<Array<f64, 1>> = 1.0 ./ t;
+    expect(f.at([0]) == 0.01Hz, "a number over an array");
+    expect((d .> 1.5km).to_list() == [false, true, true], "compare to a scalar");
+    expect((d .< d .* 2.0).to_list() == [true, true, true], "compare arrays");
+    expect(d.len() == 3 && d.shape() == [3], "shape");
+    expect(f"{cm.array(Array::from_list([1.0], [1]))}" == "[0.01] m", "display");
+}
+
+#[test]
+fn fused() {
+    let d = m.array(Array::from_list([2.0, 4.0, 9.0], [3]));
+    let t = s.array(Array::from_list([1.0, 2.0, 3.0], [3]));
+    let v0 = 0.5m / 1s;
+    // One loop, no intermediate arrays; the type is that of the steps.
+    let v: Velocity<Array<f64, 1>> = d ./ t .+ v0;
+    let w = (d ./ t) .+ v0;
+    expect(v.values_in(m / s).to_list() == [2.5, 2.5, 3.5] && v.values_in(m / s).to_list() == w.values_in(m / s).to_list(), "d ./ t .+ v0");
+    let e = 0.5 .* pkg::symbols::kg.array(Array::from_list([2.0, 2.0, 2.0], [3])) .* v .* v;
+    expect(e.at([2]) == 12.25J, "0.5 m v^2");
+    let k: Frequency<Array<f64, 1>> = 2.0 ./ t .* 3.0 .- 1Hz;
+    expect(k.at([1]) == 2Hz, "numbers and a scalar quantity");
+    v .= d ./ t;
+    expect(v.at([0]) == 2m / 1s, ".= of a fused tree");
+    v .+= v0;
+    expect(v.at([0]) == 2.5m / 1s, ".+= of a scalar quantity");
+    let z: Array<f64, 2> = Array::full([2, 2], 3.0);
+    let a = m.array(z) .* m.array(z) ./ 2s;
+    expect(a.shape() == [2, 2] && a.at([1, 1]) == 4.5m² / 1s, "rank 2");
+}
+
+#[test]
+fn matrices() {
+    let z: Array<f64, 2> = Array::full([2, 3], 1.5);
+    let field = m.array(z);
+    let area = field .* field;
+    expect(area.shape() == [2, 3] && area.at([1, 2]) == 2.25m², "rank 2");
+    rel(area.sum().value, 13.5, 1e-15, "sum over all");
+}
+
+#[test]
+fn other_value_types() {
+    // An impedance as a complex quantity.
+    let z: Quantity<Complex<f64>, 2, 1, -3, 0, 0, 0, 0> = Quantity::si(Complex { re: 0.0, im: 0.0 });
+    let r: pkg::kinds::Resistance<Complex<f64>> = Quantity::si(Complex { re: 50.0, im: 0.0 });
+    let x: pkg::kinds::Resistance<Complex<f64>> = Quantity::si(Complex { re: 0.0, im: 25.0 });
+    let total = r + x;
+    expect(total.value.re == 50.0 && total.value.im == 25.0, "complex sum");
+    let i: pkg::kinds::Current<Complex<f64>> = Quantity::si(Complex { re: 2.0, im: 0.0 });
+    let u = total * i;
+    expect(u.unit_symbol() == "V" && u.value.re == 100.0 && u.value.im == 50.0, "Ohm's law");
+    expect(z.value.re == 0.0, "zero");
+    let f: Length<f32> = Quantity::si(1.5f32);
+    expect((f + f).value == 3.0f32, "f32");
+}
