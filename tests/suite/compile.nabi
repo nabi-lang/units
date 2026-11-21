@@ -6,6 +6,7 @@
 use pkg::tests::suite::expect;
 use std::env;
 use std::fs;
+use std::nabion;
 use std::process::Command;
 
 fn find_nabi() -> str | none {
@@ -28,6 +29,8 @@ fn static_mismatches_do_not_compile() {
         }
     };
     let root = f"{try! env::current_dir()}";
+    // A NABION string: a Windows path's backslashes escaped.
+    let dep = try! nabion::to_str(root);
     let work = f"{env::temp_dir()}/units-compile-fail";
     try fs::remove_dir_all(work) catch _ {};
     let cases = 0;
@@ -38,7 +41,7 @@ fn static_mismatches_do_not_compile() {
         let want = (src.lines().next() ?? "").strip_prefix("// expect: ") ?? panic(f"{path}: first line must be `// expect: <message>`");
         let dir = f"{work}/case{cases}";
         try! fs::create_dir_all(f"{dir}/src");
-        try! fs::write(f"{dir}/nabi.nabion", f"Package {{ name: \"case\", version: \"0.1.0\", toolchain: \"0.1\", deps: {{ \"units\": Dep::path(\"{root}\") }} }}\n");
+        try! fs::write(f"{dir}/nabi.nabion", f"Package {{ name: \"case\", version: \"0.1.0\", toolchain: \"0.1\", deps: {{ \"units\": Dep::path({dep}) }} }}\n");
         try! fs::write(f"{dir}/src/main.nabi", src);
         let out = try! Command::new(nabi).arg("build").current_dir(dir).output();
         let err = str::from_utf8_lossy(out.stderr);
