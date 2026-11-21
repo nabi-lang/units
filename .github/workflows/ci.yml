@@ -14,11 +14,11 @@ permissions:
 jobs:
   dco:
     name: DCO
-    uses: nabi-lang/.github/.github/workflows/reusable-dco.yml@v1.0.2
+    uses: nabi-lang/.github/.github/workflows/reusable-dco.yml@v1.0.3
 
   package:
     name: Package
-    uses: nabi-lang/.github/.github/workflows/reusable-package.yml@v1.0.2
+    uses: nabi-lang/.github/.github/workflows/reusable-package.yml@v1.0.3
     # its tests run processes, which wasm32-wasip2 lacks
     with:
       wasm: false

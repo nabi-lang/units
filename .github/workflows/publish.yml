@@ -36,10 +36,10 @@ jobs:
           persist-credentials: false
 
       - name: Clone path dependencies
-        uses: nabi-lang/.github/actions/clone-path-deps@v1.0.2
+        uses: nabi-lang/.github/actions/clone-path-deps@v1.0.3
 
       - name: Install Nabi from the nabi.nabion pin
-        uses: nabi-lang/.github/actions/install-nabi@v1.0.2
+        uses: nabi-lang/.github/actions/install-nabi@v1.0.3
         with:
           pin: nabi.nabion
 
