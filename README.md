@@ -175,7 +175,7 @@ Logarithmic units (decibel, neper) are not in this version.
 
 ## Docs
 
-https://packages.nabi-lang.org/packages/units/latest/docs
+https://docs.nabi-lang.org/packages/units/latest
 
 ## License
 
