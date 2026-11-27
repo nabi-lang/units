@@ -5,8 +5,8 @@
 mod arith;
 mod array;
 
-use pkg::{Dim, DynUnit, Measure, Unit, UnitError};
 use pkg::unit::per_scale;
+use pkg::{Dim, DynUnit, Measure, Unit, UnitError};
 
 /// A value of a physical quantity, held in coherent SI units (metres,
 /// kilograms, seconds, ...). The seven const parameters are the
