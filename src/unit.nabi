@@ -266,7 +266,7 @@ impl DynUnit {
     ///
     /// assert(((try! DynUnit::parse("degF")).from_si(273.15) - 32.0).abs() < 1e-12);
     /// ```
-    pub fn from_si(self, si: f64) -> f64 { (si - self.offset) / self.scale }
+    pub fn from_si(self, si: f64) -> f64 { per_scale(si - self.offset, self.scale) }
 
     /// The unit as an interval: the same scale with no offset (`degC`
     /// becomes a kelvin-sized step).
@@ -359,4 +359,12 @@ pub(pkg) fn power_symbol(s: str, n: i32) -> str {
         t = t + sup[(c as u32 - '0' as u32) as usize];
     }
     t
+}
+
+/// `v / scale`, through the reciprocal when that is a whole number: a
+/// submultiple such as `g` or `mm` then gives `10540 g` for `10.54kg`,
+/// not `10539.999999999998 g`.
+pub(pkg) fn per_scale(v: f64, scale: f64) -> f64 {
+    let inv = 1.0 / scale;
+    if inv > 1.0 && inv == inv.round() { v * inv } else { v / scale }
 }

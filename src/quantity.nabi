@@ -5,6 +5,7 @@
 mod arith;
 mod array;
 
+use pkg::unit::per_scale;
 use pkg::{Dim, DynUnit, Measure, Unit, UnitError};
 
 /// A value of a physical quantity, held in coherent SI units (metres,
@@ -70,7 +71,7 @@ impl<const L: i32, const M: i32, const T: i32, const I: i32, const K: i32, const
     ///
     /// assert(1mi.value_in(ft) == 5280.0);
     /// ```
-    pub fn value_in(self, unit: Unit<L, M, T, I, K, N, J>) -> f64 { self.value / unit.scale() }
+    pub fn value_in(self, unit: Unit<L, M, T, I, K, N, J>) -> f64 { per_scale(self.value, unit.scale()) }
 
     /// The quantity expressed in `unit`, for printing or further dynamic
     /// work: `3km.to(mi)` prints `1.8641135767120018 mi`. The units must
@@ -83,7 +84,7 @@ impl<const L: i32, const M: i32, const T: i32, const I: i32, const K: i32, const
     /// assert((m.value - 3.1068559611866697).abs() < 1e-15);
     /// assert(m.unit.symbol == "mi");
     /// ```
-    pub fn to(self, unit: Unit<L, M, T, I, K, N, J>) -> Measure { Measure { value: self.value / unit.scale(), unit: unit.dynamic() } }
+    pub fn to(self, unit: Unit<L, M, T, I, K, N, J>) -> Measure { Measure { value: per_scale(self.value, unit.scale()), unit: unit.dynamic() } }
 
     /// The quantity expressed in the dynamic `unit`; throws a
     /// `UnitError::Mismatch` naming both dimensions when they differ.
