@@ -2,7 +2,13 @@
 
 All notable changes to this package. Versions follow semver, independent of the Nabi toolchain.
 
-## 0.1.0 (unreleased)
+## 0.1.1 (2026-11-27)
+
+- Converting to a unit whose reciprocal is a whole number (`g`, `cm`,
+  `mm`, `ms`) is exact where the value allows: `10.54kg → g` is
+  `10540 g`, not `10539.999999999998 g`.
+
+## 0.1.0 (2026-11-22)
 
 First release.
 
