@@ -2,7 +2,7 @@
 // factors compare exactly, rounded ones to their 7 printed digits.
 
 use pkg::DynUnit;
-use pkg::symbols::{acre, atm, au, Btu, cal, cm, deg, dyne, ft, gal, gauss, h, hp, inch, kgf, km, kn, kWh, lb, lbf, ly, mi, min, mmHg, mph, nmi, oz, pc, psi, Torr, yd, yr};
+use pkg::symbols::{acre, atm, au, Btu, cal, cm, deg, g, dyne, ft, gal, gauss, h, hp, inch, kgf, km, kn, kWh, lb, lbf, ly, mi, min, mmHg, mph, nmi, oz, pc, psi, Torr, yd, yr};
 use pkg::tests::suite::{expect, rel};
 use pkg::unit::catalogue;
 use pkg::unit::prefix::Prefix;
@@ -98,6 +98,10 @@ fn static_conversions() {
     rel(1.0Btu.value_in(cal), 252.16440072179732, 1e-14, "Btu in cal");
     rel((1kn).value_in(km / h), 1.852, 1e-15, "knot in km/h");
     rel(5km.to(mi).value, 3.1068559611866697, 1e-15, "to");
+    // A submultiple converts by its whole reciprocal, so these are exact.
+    expect((10kg + 540g).value_in(g) == 10540.0, "10.54 kg in grams");
+    expect((10kg + 540g).to(g).value == 10540.0, "10.54 kg to grams");
+    expect(1.5m.value_in(cm) == 150.0, "1.5 m in centimetres");
     expect(5km.to(mi).unit.symbol == "mi", "to keeps the symbol");
     rel((90deg).value, f64::PI / 2.0, 1e-16, "degree");
     expect((2.0 * cm.scale()) == 0.02, "centimetre scale");
