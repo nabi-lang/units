@@ -4,7 +4,7 @@ use pkg::Quantity;
 use pkg::kinds::{Frequency, Length, Time, Velocity};
 use pkg::symbols::{cm, km, m, s};
 use pkg::tests::suite::{expect, rel};
-use core::array::Array;
+use core::array::{Array, Vector};
 use core::num::Complex;
 
 fn speeds(d: Length<Array<f64, 1>>, t: Time<Array<f64, 1>>) -> Velocity<Array<f64, 1>> { d ./ t }
@@ -26,6 +26,17 @@ fn broadcast() {
     expect((4km .- d).values_in(km).to_list() == [3.0, 2.0, 1.0] && (1km .+ d).values_in(km).to_list() == [2.0, 3.0, 4.0], "a scalar quantity on the left");
     expect((2.0 .* d).values_in(km).to_list() == [2.0, 4.0, 6.0], "a number on the left");
     expect((2s .* v).at([0]) == 20m && (100m ./ v).at([1]) == 10s, "a scalar quantity on the left of .* and ./");
+    // A scalar quantity and a plain array, on either side.
+    let x: Vector<f64> = Array::from_list([1.0, 2.0, 4.0], [3]);
+    let lu = 2km;
+    let p: Length<Vector<f64>> = lu .* x;
+    expect(p.values_in(km).to_list() == [2.0, 4.0, 8.0] && (x .* lu).at([2]) == 8km, "a length times a vector");
+    expect((x .* 1s).at([1]) == 2s && (1m ./ x).values_in(cm).to_list() == [100.0, 50.0, 25.0], "times and over a plain array");
+    let r: Frequency<Vector<f64>> = x ./ 2s;
+    expect(r.at([2]) == 2Hz, "a plain array over a scalar quantity");
+    let g: Array<f64, 2> = Array::full([2, 2], 3.0);
+    expect((1.5kg .* g).at([1, 0]) == 4.5kg, "rank 2");
+    expect((lu .* x .+ 1km).values_in(km).to_list() == [3.0, 5.0, 9.0], "in a chain");
     let f: Frequency<Array<f64, 1>> = 1.0 ./ t;
     expect(f.at([0]) == 0.01Hz, "a number over an array");
     expect((d .> 1.5km).to_list() == [false, true, true], "compare to a scalar");

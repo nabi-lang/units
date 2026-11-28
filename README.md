@@ -46,6 +46,16 @@ let p = 2kN / 4cm²;            // 5000000 Pa
 // let mistake = 3m + 2s;      // does not compile: `+` needs one dimension
 ```
 
+The scalar operators (`* / + -`, comparisons, a unit on the right) are
+`const fn`, so a constant can be a formula:
+
+```nabi
+use units::kinds::Velocity;
+
+const V: Velocity = 1.082km / 1s;
+const DV: Velocity = 2.0 * V - 1kmps;
+```
+
 Temperatures on scales with an offset are readings, not amounts: two readings
 subtract to an interval in kelvin, an interval adds to a reading, and two
 readings do not add.
@@ -88,7 +98,7 @@ println((lookup("G") ?? panic("G")).uncertainty); // 0.0000000000000015
 |---|---|
 | `Quantity<V, L, M, T, I, K, N, J>` | a value of type `V` in SI units; the seven exponents are length, mass, time, current, temperature, amount, luminous intensity. `* / + -`, comparisons, `√`, `.squared()`, `.powi::<n>()`, `.to(u)`, `.value_in(u)`, `f"{q:.3}"`, `f"{q:.2e}"`, `.format(spec)` for a spec chosen at run time, `.measure()` |
 | `kinds` | names for 46 dimensions: `Length`, `Velocity`, `Force`, `Pressure`, `Entropy`, ...; each takes the value type, `Length<f32>`, `f64` when left out |
-| `symbols` | about 170 unit constants: `m`, `km`, `μm`, `inch`, `mi`, `kg`, `lb`, `s`, `ms`, `h`, `Hz`, `N`, `J`, `kWh`, `eV`, `W`, `hp`, `Pa`, `bar`, `atm`, `psi`, `V`, `Ω`, `F`, `T`, `K`, `mol`, `deg`, `kn`, `mph`, `m²`, `s²`, `s⁻¹`, ...; `degC`, `degF`, `degR`, `kelvin` scales |
+| `symbols` | about 170 unit constants: `m`, `km`, `μm`, `inch`, `mi`, `kg`, `lb`, `s`, `ms`, `h`, `Hz`, `N`, `J`, `kWh`, `eV`, `W`, `hp`, `Pa`, `bar`, `atm`, `psi`, `V`, `Ω`, `F`, `T`, `K`, `mol`, `deg`, `kn`, `mph`, `kph` (km/h), `mps` (m/s), `kmps` (km/s), `m²`, `s²`, `s⁻¹`, ...; `degC`, `degF`, `degR`, `kelvin` scales |
 | `Unit<..>` | a static unit: symbol and scale; `*` and `/` combine units, `.of(x)`, `.array(a)` |
 | `DynUnit`, `Measure` | units and values with a run-time dimension: `DynUnit::parse`, `Measure::parse`, `.to`, `.to_str`, `.fixed()` |
 | `Dim` | a dimension as a value: algebra, `.symbol()`, `.ascii()`, `.name()` |
@@ -117,7 +127,8 @@ N, J`: `Quantity<f64, 1, 0, 1, 0, 0, 0, 0>` is a length times a time (m·s).
 ### Literals and other packages
 
 A suffix is a name, so `m²`, `μs`, `kΩ`, `2bar` and `1oz` work and `%` or
-`°C` do not (`percent`, `degC`). No suffix may start with `e` (`2e3` is an
+`°C` do not (`percent`, `degC`). Speeds with a `/` are spelled out the same
+way: `kph` (km/h), `mps` (m/s), `kmps` (km/s), next to `kn` and `mph`. No suffix may start with `e` (`2e3` is an
 exponent): the electronvolt has `keV`, `MeV`, `GeV`, `TeV` but no `eV` suffix
 (`eV.of(2.0)`).
 
@@ -137,8 +148,9 @@ To leave the suffixes out, add the package with `nabi add units
 `Quantity<Array<f64, R>, ..>` is a whole array in one unit: `km.array(a)`,
 the broadcast operators `.+ .- .* ./ .< .>`, `.at(i)`, `.sum()`,
 `.values_in(u)`. A number or a scalar quantity goes on either side (`2.0 .* d`,
-`d ./ 2s`, `2s .* v`, `1.0 ./ t`), and a chain of operators runs as one loop,
-as on bare arrays.
+`d ./ 2s`, `2s .* v`, `1.0 ./ t`). A scalar quantity with a plain
+`Array<f64, R>` gives an array quantity (`lu .* x`, `x .* 2s`, `1m ./ x`,
+`x ./ 1s`). A chain of operators runs as one loop, as on bare arrays.
 `Complex<f64>` and `f32` values work with the scalar operators.
 
 ```nabi

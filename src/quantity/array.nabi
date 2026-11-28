@@ -1,7 +1,8 @@
 //! Quantities over core arrays: one unit for a whole field of values.
 //! The broadcast operators work as on the bare arrays, with the
 //! dimension checked once, in the type, not per element. A scalar
-//! quantity or a number goes on either side. A chain of them
+//! quantity or a number goes on either side, and a scalar quantity
+//! with a plain array gives an array quantity (`lu .* x`). A chain of them
 //! (`d ./ t .+ v0`) runs as one loop with no intermediate arrays, as
 //! on bare arrays.
 
@@ -154,6 +155,33 @@ impl<const R: usize, const L: i32, const M: i32, const T: i32, const I: i32, con
     type Output = Quantity<Array<f64, R>, { -L }, { -M }, { -T }, { -I }, { -K }, { -N }, { -J }>;
     #[inline]
     fn dot_div(self, rhs: Quantity<Array<f64, R>, L, M, T, I, K, N, J>) -> Quantity<Array<f64, R>, { -L }, { -M }, { -T }, { -I }, { -K }, { -N }, { -J }> { Quantity { value: self ./ rhs.value } }
+}
+
+// A scalar quantity and a plain array: `lu .* x`, `x .* 2s`, `1m ./ x`,
+// `x ./ 1s`. The array is a number per element, as for `f64`.
+
+impl<const R: usize, const L: i32, const M: i32, const T: i32, const I: i32, const K: i32, const N: i32, const J: i32> ops::DotMul<Array<f64, R>> for Quantity<f64, L, M, T, I, K, N, J> {
+    type Output = Quantity<Array<f64, R>, L, M, T, I, K, N, J>;
+    #[inline]
+    fn dot_mul(self, rhs: Array<f64, R>) -> Quantity<Array<f64, R>, L, M, T, I, K, N, J> { Quantity { value: self.value .* rhs } }
+}
+
+impl<const R: usize, const L: i32, const M: i32, const T: i32, const I: i32, const K: i32, const N: i32, const J: i32> ops::DotDiv<Array<f64, R>> for Quantity<f64, L, M, T, I, K, N, J> {
+    type Output = Quantity<Array<f64, R>, L, M, T, I, K, N, J>;
+    #[inline]
+    fn dot_div(self, rhs: Array<f64, R>) -> Quantity<Array<f64, R>, L, M, T, I, K, N, J> { Quantity { value: self.value ./ rhs } }
+}
+
+impl<const R: usize, const L: i32, const M: i32, const T: i32, const I: i32, const K: i32, const N: i32, const J: i32> ops::DotMul<Quantity<f64, L, M, T, I, K, N, J>> for Array<f64, R> {
+    type Output = Quantity<Array<f64, R>, L, M, T, I, K, N, J>;
+    #[inline]
+    fn dot_mul(self, rhs: Quantity<f64, L, M, T, I, K, N, J>) -> Quantity<Array<f64, R>, L, M, T, I, K, N, J> { Quantity { value: self .* rhs.value } }
+}
+
+impl<const R: usize, const L: i32, const M: i32, const T: i32, const I: i32, const K: i32, const N: i32, const J: i32> ops::DotDiv<Quantity<f64, L, M, T, I, K, N, J>> for Array<f64, R> {
+    type Output = Quantity<Array<f64, R>, { -L }, { -M }, { -T }, { -I }, { -K }, { -N }, { -J }>;
+    #[inline]
+    fn dot_div(self, rhs: Quantity<f64, L, M, T, I, K, N, J>) -> Quantity<Array<f64, R>, { -L }, { -M }, { -T }, { -I }, { -K }, { -N }, { -J }> { Quantity { value: self ./ rhs.value } }
 }
 
 impl<const R: usize, const L: i32, const M: i32, const T: i32, const I: i32, const K: i32, const N: i32, const J: i32> Quantity<Array<f64, R>, L, M, T, I, K, N, J> {
