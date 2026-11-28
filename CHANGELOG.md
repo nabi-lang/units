@@ -2,6 +2,16 @@
 
 All notable changes to this package. Versions follow semver, independent of the Nabi toolchain.
 
+## 0.1.3 (2026-11-29)
+
+- The arithmetic and comparisons are `const fn`: `const V: Velocity =
+  1.082km / 1s;` works.
+- `mps` and `kmps` literals and symbols for metres and kilometres per
+  second (`7.8kmps`, `DynUnit::parse("kmps")`).
+- A scalar quantity times or over a plain array, either side:
+  `363300km .* x` with `x: Vector<f64>` keeps the length dimension.
+- Needs Nabi 0.1.8 or later.
+
 ## 0.1.2 (2026-11-28)
 
 - The conversion operator is `->` (`5km -> mi`), bound with
