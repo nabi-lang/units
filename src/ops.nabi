@@ -1,6 +1,6 @@
 //! Operators for unit code (feature `ops`, on by default):
 //!
-//!   q → u     the quantity expressed in unit `u` (level of `|`)
+//!   q -> u     the quantity expressed in unit `u` (level of `|`)
 //!   x°        degrees as an angle in radians (postfix, level of `?`)
 //!   √q        square root of a quantity (core's `√`, always on)
 //!
@@ -9,23 +9,23 @@
 use pkg::temperature::Scale;
 use pkg::{DynUnit, Measure, Quantity, Temperature, Unit, UnitError};
 
-/// `q → u`: the quantity in unit `u`, for printing (`3km → mi` prints
+/// `q -> u`: the quantity in unit `u`, for printing (`3km -> mi` prints
 /// `1.8641135767120018 mi`). Binds like `|`: looser than arithmetic,
-/// tighter than comparison, so `a + b → km` converts the sum. Static
+/// tighter than comparison, so `a + b -> km` converts the sum. Static
 /// quantities take static units and the types check the dimension; a
 /// `Measure` takes a `DynUnit` and gives a `Result`.
 ///
 /// ```nabi
 /// use units::symbols::{degF, h, km, m, mi, s};
 ///
-/// assert((5km → mi).unit.symbol == "mi");
-/// assert((1km + 500m → m).value == 1500.0);
-/// assert((36km / 1h → m / s).value == 10.0);
-/// assert((20degC → degF).value == 68.0);
+/// assert((5km -> mi).unit.symbol == "mi");
+/// assert((1km + 500m -> m).value == 1500.0);
+/// assert((36km / 1h -> m / s).value == 10.0);
+/// assert((20degC -> degF).value == 68.0);
 /// ```
 pub trait Convert<Rhs> {
     type Output;
-    #[infix("→", like = "|")]
+    #[infix("->", like = "|")]
     fn convert_to(self, unit: Rhs) -> Output;
 }
 

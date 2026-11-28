@@ -29,8 +29,8 @@ fn kinetic(mass: Mass, v: Velocity) -> Energy { 0.5 * mass * v.squared() }
 
 let v = speed(42.195km, 2h);
 println(v);                    // 5.860416666666667 m/s
-println(v → km / h);           // 21.0975 km/h
-println(5km → mi);             // 3.1068559611866697 mi
+println(v -> km / h);           // 21.0975 km/h
+println(5km -> mi);             // 3.1068559611866697 mi
 println(kinetic(2kg, 3m / 1s)); // 9 J
 let newton = kg * m / s²;      // a static unit; prints `kg·m/s²`
 ```
@@ -54,7 +54,7 @@ readings do not add.
 use units::symbols::degF;
 
 let t = 20degC;
-println(t → degF);             // 68 °F
+println(t -> degF);             // 68 °F
 println(30degC - 20degC);      // 10 K
 println(t + 5K);               // 25 °C
 // 20degC + 10degC              does not compile
@@ -96,7 +96,7 @@ println((lookup("G") ?? panic("G")).uncertainty); // 0.0000000000000015
 | `constants` | `c`, `h`, `hbar`, `e`, `k_B`, `N_A`, `R`, `F`, `sigma`, `G`, `alpha`, `mu_0`, `epsilon_0`, `m_e`, `m_p`, `m_n`, `m_u`, `a_0`, `R_inf`, ...; `codata()`, `lookup` |
 | `unit::catalogue`, `unit::prefix` | the unit catalogue (NIST SP 811 factors) and the 24 SI prefixes, quecto to quetta |
 | `literals` | number suffixes (feature `literals`, on by default) |
-| `ops` | `q → u` conversion and `x°` degrees (feature `ops`, on by default) |
+| `ops` | `q -> u` conversion and `x°` degrees (feature `ops`, on by default) |
 | `UnitError` | what went wrong: `Mismatch`, `Unknown` (with a suggestion), `Syntax`, `Value` |
 
 ### Reading a type error
@@ -109,7 +109,7 @@ N, J`: `Quantity<f64, 1, 0, 1, 0, 0, 0, 0>` is a length times a time (m·s).
 
 | Operator | Meaning | Level |
 |---|---|---|
-| `q → u` (U+2192) | `q.to(u)`: the quantity in unit `u`; a `Measure` on the right gives a `Result` | `\|`: `a + b → km` converts the sum |
+| `q -> u` | `q.to(u)`: the quantity in unit `u`; a `Measure` on the right gives a `Result` | `\|`: `a + b -> km` converts the sum |
 | `x°` (U+00B0) | `x` degrees as an angle in radians, a dimensionless quantity | postfix `?`: `-30°` is `-(30°)` |
 | `√q` | square root; every exponent must be even, else it does not compile | core's prefix `√` |
 | `q ** n` | a `Measure`: `n` is a value, so the dimension is too. `q.powi::<n>()` and `q.squared()` stay static | `**` |
