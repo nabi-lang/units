@@ -410,6 +410,18 @@ pub const K⁻¹: Unit<0, 0, 0, 0, -1, 0, 0> = Unit::new("K⁻¹", 1.0);
 /// assert(units::symbols::mol⁻¹.symbol() == "mol⁻¹");
 /// ```
 pub const mol⁻¹: Unit<0, 0, 0, 0, 0, -1, 0> = Unit::new("mol⁻¹", 1.0);
+/// `m/s`: 1.0 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::mps.symbol() == "m/s");
+/// ```
+pub const mps: Unit<1, 0, -1, 0, 0, 0, 0> = Unit::new("m/s", 1.0);
+/// `km/s`: 1e3 SI units.
+///
+/// ```nabi
+/// assert(units::symbols::kmps.symbol() == "km/s");
+/// ```
+pub const kmps: Unit<1, 0, -1, 0, 0, 0, 0> = Unit::new("km/s", 1e3);
 /// `kn`: 1852.0 / 3600.0 SI units.
 ///
 /// ```nabi

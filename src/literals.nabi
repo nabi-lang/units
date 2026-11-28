@@ -486,6 +486,22 @@ pub const fn revolutions_per_minute(n: f64) -> pkg::kinds::Frequency { Quantity 
 #[literal(number "Bq")]
 pub const fn becquerels(n: f64) -> pkg::kinds::Frequency { Quantity { value: n } }
 
+/// `1mps` is one m/s.
+///
+/// ```nabi
+/// assert(2mps == units::symbols::mps.of(2.0));
+/// ```
+#[literal(number "mps")]
+pub const fn metres_per_second(n: f64) -> pkg::kinds::Velocity { Quantity { value: n } }
+
+/// `1kmps` is one km/s.
+///
+/// ```nabi
+/// assert(2kmps == units::symbols::kmps.of(2.0));
+/// ```
+#[literal(number "kmps")]
+pub const fn kilometres_per_second(n: f64) -> pkg::kinds::Velocity { Quantity { value: n * 1e3 } }
+
 /// `1kn` is one kn.
 ///
 /// ```nabi

@@ -1,77 +1,82 @@
 //! Scalar arithmetic: exponents add under `*`, subtract under `/`, and
 //! must agree for `+`, `-` and the comparisons. A unit acts as one of
-//! itself (`q / km` is the number of kilometres).
+//! itself (`q / km` is the number of kilometres). Every operator here
+//! is a `const fn`, so `const V: Velocity = 1.082km / 1s;` works.
 
 use pkg::{Quantity, Unit};
 
 impl<V: ops::Mul<Output = V>, const L: i32, const M: i32, const T: i32, const I: i32, const K: i32, const N: i32, const J: i32, const L2: i32, const M2: i32, const T2: i32, const I2: i32, const K2: i32, const N2: i32, const J2: i32> ops::Mul<Quantity<V, L2, M2, T2, I2, K2, N2, J2>> for Quantity<V, L, M, T, I, K, N, J> {
     type Output = Quantity<V, { L + L2 }, { M + M2 }, { T + T2 }, { I + I2 }, { K + K2 }, { N + N2 }, { J + J2 }>;
     #[inline]
-    fn mul(self, rhs: Quantity<V, L2, M2, T2, I2, K2, N2, J2>) -> Quantity<V, { L + L2 }, { M + M2 }, { T + T2 }, { I + I2 }, { K + K2 }, { N + N2 }, { J + J2 }> { Quantity { value: self.value * rhs.value } }
+    const fn mul(self, rhs: Quantity<V, L2, M2, T2, I2, K2, N2, J2>) -> Quantity<V, { L + L2 }, { M + M2 }, { T + T2 }, { I + I2 }, { K + K2 }, { N + N2 }, { J + J2 }> { Quantity { value: self.value * rhs.value } }
 }
 
 impl<V: ops::Div<Output = V>, const L: i32, const M: i32, const T: i32, const I: i32, const K: i32, const N: i32, const J: i32, const L2: i32, const M2: i32, const T2: i32, const I2: i32, const K2: i32, const N2: i32, const J2: i32> ops::Div<Quantity<V, L2, M2, T2, I2, K2, N2, J2>> for Quantity<V, L, M, T, I, K, N, J> {
     type Output = Quantity<V, { L - L2 }, { M - M2 }, { T - T2 }, { I - I2 }, { K - K2 }, { N - N2 }, { J - J2 }>;
     #[inline]
-    fn div(self, rhs: Quantity<V, L2, M2, T2, I2, K2, N2, J2>) -> Quantity<V, { L - L2 }, { M - M2 }, { T - T2 }, { I - I2 }, { K - K2 }, { N - N2 }, { J - J2 }> { Quantity { value: self.value / rhs.value } }
+    const fn div(self, rhs: Quantity<V, L2, M2, T2, I2, K2, N2, J2>) -> Quantity<V, { L - L2 }, { M - M2 }, { T - T2 }, { I - I2 }, { K - K2 }, { N - N2 }, { J - J2 }> { Quantity { value: self.value / rhs.value } }
 }
 
 impl<V: ops::Mul<Output = V>, const L: i32, const M: i32, const T: i32, const I: i32, const K: i32, const N: i32, const J: i32> ops::Mul<V> for Quantity<V, L, M, T, I, K, N, J> {
     type Output = Quantity<V, L, M, T, I, K, N, J>;
     #[inline]
-    fn mul(self, rhs: V) -> Quantity<V, L, M, T, I, K, N, J> { Quantity { value: self.value * rhs } }
+    const fn mul(self, rhs: V) -> Quantity<V, L, M, T, I, K, N, J> { Quantity { value: self.value * rhs } }
 }
 
 impl<V: ops::Div<Output = V>, const L: i32, const M: i32, const T: i32, const I: i32, const K: i32, const N: i32, const J: i32> ops::Div<V> for Quantity<V, L, M, T, I, K, N, J> {
     type Output = Quantity<V, L, M, T, I, K, N, J>;
     #[inline]
-    fn div(self, rhs: V) -> Quantity<V, L, M, T, I, K, N, J> { Quantity { value: self.value / rhs } }
+    const fn div(self, rhs: V) -> Quantity<V, L, M, T, I, K, N, J> { Quantity { value: self.value / rhs } }
 }
 
 impl<V: ops::Add<Output = V>, const L: i32, const M: i32, const T: i32, const I: i32, const K: i32, const N: i32, const J: i32> ops::Add for Quantity<V, L, M, T, I, K, N, J> {
     type Output = Quantity<V, L, M, T, I, K, N, J>;
     #[inline]
-    fn add(self, rhs: Quantity<V, L, M, T, I, K, N, J>) -> Quantity<V, L, M, T, I, K, N, J> { Quantity { value: self.value + rhs.value } }
+    const fn add(self, rhs: Quantity<V, L, M, T, I, K, N, J>) -> Quantity<V, L, M, T, I, K, N, J> { Quantity { value: self.value + rhs.value } }
 }
 
 impl<V: ops::Sub<Output = V>, const L: i32, const M: i32, const T: i32, const I: i32, const K: i32, const N: i32, const J: i32> ops::Sub for Quantity<V, L, M, T, I, K, N, J> {
     type Output = Quantity<V, L, M, T, I, K, N, J>;
     #[inline]
-    fn sub(self, rhs: Quantity<V, L, M, T, I, K, N, J>) -> Quantity<V, L, M, T, I, K, N, J> { Quantity { value: self.value - rhs.value } }
+    const fn sub(self, rhs: Quantity<V, L, M, T, I, K, N, J>) -> Quantity<V, L, M, T, I, K, N, J> { Quantity { value: self.value - rhs.value } }
 }
 
 impl<V: ops::Neg<Output = V>, const L: i32, const M: i32, const T: i32, const I: i32, const K: i32, const N: i32, const J: i32> ops::Neg for Quantity<V, L, M, T, I, K, N, J> {
     type Output = Quantity<V, L, M, T, I, K, N, J>;
     #[inline]
-    fn neg(self) -> Quantity<V, L, M, T, I, K, N, J> { Quantity { value: -self.value } }
+    const fn neg(self) -> Quantity<V, L, M, T, I, K, N, J> { Quantity { value: -self.value } }
 }
 
 impl<V: PartialEq, const L: i32, const M: i32, const T: i32, const I: i32, const K: i32, const N: i32, const J: i32> PartialEq for Quantity<V, L, M, T, I, K, N, J> {
     #[inline]
-    fn eq(self, rhs: Quantity<V, L, M, T, I, K, N, J>) -> bool { self.value == rhs.value }
+    const fn eq(self, rhs: Quantity<V, L, M, T, I, K, N, J>) -> bool { self.value == rhs.value }
+    // Written out: in a const, core's default `ne` does not resolve
+    // `Quantity` (E0028, nabi 0.1.8).
+    #[inline]
+    const fn ne(self, rhs: Quantity<V, L, M, T, I, K, N, J>) -> bool { self.value != rhs.value }
 }
 
 impl<V: PartialOrd, const L: i32, const M: i32, const T: i32, const I: i32, const K: i32, const N: i32, const J: i32> PartialOrd for Quantity<V, L, M, T, I, K, N, J> {
     #[inline]
-    fn lt(self, rhs: Quantity<V, L, M, T, I, K, N, J>) -> bool { self.value < rhs.value }
+    const fn lt(self, rhs: Quantity<V, L, M, T, I, K, N, J>) -> bool { self.value < rhs.value }
     #[inline]
-    fn gt(self, rhs: Quantity<V, L, M, T, I, K, N, J>) -> bool { self.value > rhs.value }
+    const fn gt(self, rhs: Quantity<V, L, M, T, I, K, N, J>) -> bool { self.value > rhs.value }
     #[inline]
-    fn le(self, rhs: Quantity<V, L, M, T, I, K, N, J>) -> bool { self.value <= rhs.value }
+    const fn le(self, rhs: Quantity<V, L, M, T, I, K, N, J>) -> bool { self.value <= rhs.value }
     #[inline]
-    fn ge(self, rhs: Quantity<V, L, M, T, I, K, N, J>) -> bool { self.value >= rhs.value }
+    const fn ge(self, rhs: Quantity<V, L, M, T, I, K, N, J>) -> bool { self.value >= rhs.value }
 }
 
 impl<const L: i32, const M: i32, const T: i32, const I: i32, const K: i32, const N: i32, const J: i32, const L2: i32, const M2: i32, const T2: i32, const I2: i32, const K2: i32, const N2: i32, const J2: i32> ops::Mul<Unit<L2, M2, T2, I2, K2, N2, J2>> for Quantity<f64, L, M, T, I, K, N, J> {
     type Output = Quantity<f64, { L + L2 }, { M + M2 }, { T + T2 }, { I + I2 }, { K + K2 }, { N + N2 }, { J + J2 }>;
     #[inline]
-    fn mul(self, rhs: Unit<L2, M2, T2, I2, K2, N2, J2>) -> Quantity<f64, { L + L2 }, { M + M2 }, { T + T2 }, { I + I2 }, { K + K2 }, { N + N2 }, { J + J2 }> { Quantity { value: self.value * rhs.scale() } }
+    const fn mul(self, rhs: Unit<L2, M2, T2, I2, K2, N2, J2>) -> Quantity<f64, { L + L2 }, { M + M2 }, { T + T2 }, { I + I2 }, { K + K2 }, { N + N2 }, { J + J2 }> { Quantity { value: self.value * rhs.scale() } }
 }
 
 impl<const L: i32, const M: i32, const T: i32, const I: i32, const K: i32, const N: i32, const J: i32, const L2: i32, const M2: i32, const T2: i32, const I2: i32, const K2: i32, const N2: i32, const J2: i32> ops::Div<Unit<L2, M2, T2, I2, K2, N2, J2>> for Quantity<f64, L, M, T, I, K, N, J> {
     type Output = Quantity<f64, { L - L2 }, { M - M2 }, { T - T2 }, { I - I2 }, { K - K2 }, { N - N2 }, { J - J2 }>;
     #[inline]
-    fn div(self, rhs: Unit<L2, M2, T2, I2, K2, N2, J2>) -> Quantity<f64, { L - L2 }, { M - M2 }, { T - T2 }, { I - I2 }, { K - K2 }, { N - N2 }, { J - J2 }> { Quantity { value: self.value / rhs.scale() } }
+    const fn div(self, rhs: Unit<L2, M2, T2, I2, K2, N2, J2>) -> Quantity<f64, { L - L2 }, { M - M2 }, { T - T2 }, { I - I2 }, { K - K2 }, { N - N2 }, { J - J2 }> { Quantity { value: self.value / rhs.scale() } }
 }
 
 // A number on the left: `0.5 * m * v.squared()`, `1.0 / t`.
@@ -79,23 +84,23 @@ impl<const L: i32, const M: i32, const T: i32, const I: i32, const K: i32, const
 impl<const L: i32, const M: i32, const T: i32, const I: i32, const K: i32, const N: i32, const J: i32> ops::Mul<Quantity<f64, L, M, T, I, K, N, J>> for f64 {
     type Output = Quantity<f64, L, M, T, I, K, N, J>;
     #[inline]
-    fn mul(self, rhs: Quantity<f64, L, M, T, I, K, N, J>) -> Quantity<f64, L, M, T, I, K, N, J> { Quantity { value: self * rhs.value } }
+    const fn mul(self, rhs: Quantity<f64, L, M, T, I, K, N, J>) -> Quantity<f64, L, M, T, I, K, N, J> { Quantity { value: self * rhs.value } }
 }
 
 impl<const L: i32, const M: i32, const T: i32, const I: i32, const K: i32, const N: i32, const J: i32> ops::Mul<Quantity<f32, L, M, T, I, K, N, J>> for f32 {
     type Output = Quantity<f32, L, M, T, I, K, N, J>;
     #[inline]
-    fn mul(self, rhs: Quantity<f32, L, M, T, I, K, N, J>) -> Quantity<f32, L, M, T, I, K, N, J> { Quantity { value: self * rhs.value } }
+    const fn mul(self, rhs: Quantity<f32, L, M, T, I, K, N, J>) -> Quantity<f32, L, M, T, I, K, N, J> { Quantity { value: self * rhs.value } }
 }
 
 impl<const L: i32, const M: i32, const T: i32, const I: i32, const K: i32, const N: i32, const J: i32> ops::Div<Quantity<f64, L, M, T, I, K, N, J>> for f64 {
     type Output = Quantity<f64, { -L }, { -M }, { -T }, { -I }, { -K }, { -N }, { -J }>;
     #[inline]
-    fn div(self, rhs: Quantity<f64, L, M, T, I, K, N, J>) -> Quantity<f64, { -L }, { -M }, { -T }, { -I }, { -K }, { -N }, { -J }> { Quantity { value: self / rhs.value } }
+    const fn div(self, rhs: Quantity<f64, L, M, T, I, K, N, J>) -> Quantity<f64, { -L }, { -M }, { -T }, { -I }, { -K }, { -N }, { -J }> { Quantity { value: self / rhs.value } }
 }
 
 impl<const L: i32, const M: i32, const T: i32, const I: i32, const K: i32, const N: i32, const J: i32> ops::Div<Quantity<f32, L, M, T, I, K, N, J>> for f32 {
     type Output = Quantity<f32, { -L }, { -M }, { -T }, { -I }, { -K }, { -N }, { -J }>;
     #[inline]
-    fn div(self, rhs: Quantity<f32, L, M, T, I, K, N, J>) -> Quantity<f32, { -L }, { -M }, { -T }, { -I }, { -K }, { -N }, { -J }> { Quantity { value: self / rhs.value } }
+    const fn div(self, rhs: Quantity<f32, L, M, T, I, K, N, J>) -> Quantity<f32, { -L }, { -M }, { -T }, { -I }, { -K }, { -N }, { -J }> { Quantity { value: self / rhs.value } }
 }
