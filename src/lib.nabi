@@ -6,7 +6,7 @@
 //! throw a `UnitError` that names both sides.
 //!
 //! Values are held in coherent SI units; a unit is a symbol and a scale.
-//! Number suffixes (`3km`, `20degC`) come from `literals`, the `→`
+//! Number suffixes (`3km`, `20degC`) come from `literals`, the `->`
 //! conversion and `°` from `ops`; both are features on by default.
 
 // Constants and unit constants go by their symbols (`k_B`, `km`,

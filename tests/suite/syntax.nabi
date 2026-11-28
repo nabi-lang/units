@@ -30,19 +30,19 @@ fn rel_ok(a: f64, b: f64) -> bool { (a - b).abs() <= 1e-15 * b.abs() }
 
 #[test]
 fn convert_operator() {
-    let d = 5km → mi;
-    rel(d.value, 3.1068559611866697, 1e-15, "→");
-    expect(d.unit.symbol == "mi", "unit of →");
-    // `→` binds like `|`: looser than `+`, tighter than `==`.
-    expect((1km + 500m → m).value == 1500.0, "sum then convert");
-    expect((2km * 3.0 → km).value == 6.0, "product then convert");
-    expect((1mi → ft).value == 5280.0, "mile in feet");
-    rel((100km / 1h → m / s).value, 27.77777777777778, 1e-15, "speed");
-    expect((20degC → degF).value == 68.0 && (0degC → kelvin).value == 273.15, "temperatures");
+    let d = 5km -> mi;
+    rel(d.value, 3.1068559611866697, 1e-15, "->");
+    expect(d.unit.symbol == "mi", "unit of ->");
+    // `->` binds like `|`: looser than `+`, tighter than `==`.
+    expect((1km + 500m -> m).value == 1500.0, "sum then convert");
+    expect((2km * 3.0 -> km).value == 6.0, "product then convert");
+    expect((1mi -> ft).value == 5280.0, "mile in feet");
+    rel((100km / 1h -> m / s).value, 27.77777777777778, 1e-15, "speed");
+    expect((20degC -> degF).value == 68.0 && (0degC -> kelvin).value == 273.15, "temperatures");
     let m = try! Measure::parse("1 mi");
-    expect((try! (m → try! pkg::DynUnit::parse("ft")).get()).value == 5280.0, "measure → dyn unit");
-    expect((m → try! pkg::DynUnit::parse("s")).is_err(), "measure mismatch is an error value");
-    expect(f"{1h → s}" == "3600 s", "prints");
+    expect((try! (m -> try! pkg::DynUnit::parse("ft")).get()).value == 5280.0, "measure -> dyn unit");
+    expect((m -> try! pkg::DynUnit::parse("s")).is_err(), "measure mismatch is an error value");
+    expect(f"{1h -> s}" == "3600 s", "prints");
 }
 
 #[test]
