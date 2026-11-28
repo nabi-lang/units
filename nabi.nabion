@@ -1,6 +1,6 @@
 Package {
     name: "units",
-    version: "0.1.1",
+    version: "0.1.2",
     nabi_version: "0.1.7",
     toolchain: "0.1",
     description: "Physical quantities with units: dimensions checked at compile time, SI and common units, parsing, conversion, CODATA constants",

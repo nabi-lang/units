@@ -2,6 +2,11 @@
 
 All notable changes to this package. Versions follow semver, independent of the Nabi toolchain.
 
+## 0.1.2 (2026-11-28)
+
+- The conversion operator is `->` (`5km -> mi`), bound with
+  `#[infix("->", like = "|")]`; `→` is gone. Needs Nabi 0.1.7 or later.
+
 ## 0.1.1 (2026-11-27)
 
 - Converting to a unit whose reciprocal is a whole number (`g`, `cm`,
